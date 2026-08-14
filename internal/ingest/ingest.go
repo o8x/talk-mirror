@@ -8,9 +8,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/talk-mirror/talk-mirror/internal/model"
-	"github.com/talk-mirror/talk-mirror/internal/session"
-	"github.com/talk-mirror/talk-mirror/internal/state"
+	"github.com/o8x/talk-mirror/internal/model"
+	"github.com/o8x/talk-mirror/internal/session"
+	"github.com/o8x/talk-mirror/internal/state"
 )
 
 // Server accepts raw TCP/UDP debug data on the same port.

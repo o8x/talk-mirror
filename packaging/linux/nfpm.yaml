@@ -6,7 +6,7 @@ section: utils
 priority: optional
 maintainer: Talk-mirror contributors
 description: Talk-mirror remote debugger (self-contained single binary)
-homepage: https://github.com/talk-mirror/talk-mirror
+homepage: https://github.com/o8x/talk-mirror
 license: MIT
 vendor: Talk-mirror
 

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/talk-mirror/talk-mirror/internal/model"
-	ldb "github.com/talk-mirror/talk-mirror/internal/store/leveldb"
+	"github.com/o8x/talk-mirror/internal/model"
+	ldb "github.com/o8x/talk-mirror/internal/store/leveldb"
 )
 
 const (

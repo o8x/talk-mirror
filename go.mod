@@ -1,4 +1,4 @@
-module github.com/talk-mirror/talk-mirror
+module github.com/o8x/talk-mirror
 
 go 1.25.0
 

@@ -4,9 +4,11 @@ import StatCard from '../components/StatCard'
 import TrendChart from '../components/TrendChart'
 import { getOverview, getSessions } from '../api/client'
 import { formatCount, formatQps, formatTime } from '../utils'
+import { useT } from '../i18n'
 import type { Overview, Session } from '../types'
 
 export default function Home() {
+  const t = useT()
   const [overview, setOverview] = useState<Overview | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
 
@@ -34,33 +36,33 @@ export default function Home() {
     <Box>
       <Grid container spacing={2}>
         <Grid item xs={6} md={3}>
-          <StatCard label="Total messages" value={formatCount(overview?.total_messages ?? 0)} />
+          <StatCard label={t('home.totalMessages')} value={formatCount(overview?.total_messages ?? 0)} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <StatCard label="Messages / sec" value={formatQps(overview?.qps ?? 0)} />
+          <StatCard label={t('home.messagesPerSec')} value={formatQps(overview?.qps ?? 0)} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <StatCard label="Active connections" value={String(overview?.active_connections ?? 0)} />
+          <StatCard label={t('home.activeConnections')} value={String(overview?.active_connections ?? 0)} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <StatCard label="Active sessions" value={String(overview?.active_sessions ?? 0)} />
+          <StatCard label={t('home.activeSessions')} value={String(overview?.active_sessions ?? 0)} />
         </Grid>
       </Grid>
 
       <Card sx={{ mt: 2, p: 2 }}>
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Messages over the last 5 minutes
+          {t('home.trendTitle')}
         </Typography>
         <TrendChart data={overview?.buckets ?? []} height={260} />
       </Card>
 
       <Card sx={{ mt: 2, p: 2 }}>
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Recent active sessions
+          {t('home.recentSessions')}
         </Typography>
         {sessions.length === 0 && (
           <Typography variant="body2" color="text.secondary">
-            No active sessions yet.
+            {t('home.noSessions')}
           </Typography>
         )}
         {sessions.map((s) => (
@@ -78,7 +80,7 @@ export default function Home() {
               {s.ip}:{s.port} <span style={{ opacity: 0.6 }}>/{s.protocol}</span>
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {formatCount(s.message_count)} msgs · {formatTime(s.last_active_at)}
+              {formatCount(s.message_count)} {t('home.msgs')} · {formatTime(s.last_active_at)}
             </Typography>
           </Box>
         ))}

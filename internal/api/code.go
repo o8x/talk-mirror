@@ -1,10 +1,9 @@
 package api
 
-import (
-	"net/http"
-)
+import "net/http"
 
-var codeExamples = map[string]string{
+// appExamples are ready-to-run clients (application mode).
+var appExamples = map[string]string{
 	"javascript": `// Node.js (stdlib only) - TCP long-connection debug client
 const net = require('net');
 
@@ -117,7 +116,9 @@ send_frame() {
     echo "frame too large" >&2
     return 1
   fi
-  printf "\\x%02x\\x%02x%s" $((len >> 8)) $((len & 0xff)) "$json"
+  local hi=$(( (len >> 8) & 0xff ))
+  local lo=$(( len & 0xff ))
+  printf "$(printf '\\%03o' "$hi")$(printf '\\%03o' "$lo")%s" "$json"
 }
 
 exec 3<>/dev/tcp/$HOST/$PORT || { echo "connect failed" >&2; exit 1; }
@@ -169,12 +170,148 @@ int main() {
 `,
 }
 
+// fnExamples are single reusable functions (function mode), callable from
+// other code: send(conn, message, tag, data).
+var fnExamples = map[string]string{
+	"javascript": `// Node.js (stdlib only) - reusable send function
+function send(conn, message, tag, data) {
+  const json = Buffer.from(
+    JSON.stringify({ time_nano: Date.now() * 1e6, tag, message, data }),
+    'utf8'
+  );
+  if (json.length > 65535) throw new Error('frame too large');
+  const header = Buffer.alloc(2);
+  header.writeUInt16BE(json.length, 0);
+  conn.write(Buffer.concat([header, json]));
+}
+
+// usage:
+// send(conn, 'hello', ['info'], { foo: 'bar' });
+`,
+
+	"python": `# Python 3 (stdlib only) - reusable send function
+import json
+import struct
+import time
+
+
+def send(sock, message, tag, data):
+    payload = json.dumps({
+        "time_nano": time.time_ns(),
+        "tag": tag,
+        "message": message,
+        "data": data,
+    }).encode("utf-8")
+    if len(payload) > 65535:
+        raise ValueError("frame too large")
+    sock.sendall(struct.pack(">H", len(payload)) + payload)
+
+
+# usage:
+# send(sock, "hello", ["info"], {"foo": "bar"})
+`,
+
+	"go": `package client
+
+// Go (stdlib only) - reusable send function.
+import (
+	"encoding/binary"
+	"encoding/json"
+	"fmt"
+	"net"
+	"time"
+)
+
+func Send(conn net.Conn, message string, tag []string, data map[string]any) error {
+	body, err := json.Marshal(map[string]any{
+		"time_nano": time.Now().UnixNano(),
+		"tag":       tag,
+		"message":   message,
+		"data":      data,
+	})
+	if err != nil {
+		return err
+	}
+	if len(body) > 65535 {
+		return fmt.Errorf("frame too large")
+	}
+	buf := make([]byte, 2+len(body))
+	binary.BigEndian.PutUint16(buf[:2], uint16(len(body)))
+	copy(buf[2:], body)
+	_, err = conn.Write(buf)
+	return err
+}
+`,
+
+	"shell": `# Bash (stdlib only) - reusable send function.
+# tag and data are JSON strings (e.g. '["info"]' and '{"foo":"bar"}').
+send_frame() {
+  local fd="$1" message="$2" tag="$3" data="$4"
+  local ts
+  ts=$(date +%s%N)
+  local json
+  json="{\"time_nano\":$ts,\"tag\":$tag,\"message\":$message,\"data\":$data}"
+  local len=${#json}
+  if [ "$len" -gt 65535 ]; then
+    echo "frame too large" >&2
+    return 1
+  fi
+  local hi=$(( (len >> 8) & 0xff ))
+  local lo=$(( len & 0xff ))
+  printf "$(printf '\\%03o' "$hi")$(printf '\\%03o' "$lo")%s" "$json" >&"$fd"
+}
+
+# usage:
+# send_frame 3 "hello" '["info"]' '{"foo":"bar"}'
+`,
+
+	"c++": `// C++17 (stdlib only) - reusable send function.
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <cstdint>
+#include <cstring>
+#include <map>
+#include <string>
+#include <vector>
+
+void send_frame(int sock, const std::string& message,
+                const std::vector<std::string>& tag,
+                const std::map<std::string, std::string>& data) {
+    std::string tags;
+    for (size_t i = 0; i < tag.size(); i++) {
+        if (i) tags += "\",\"";
+        tags += tag[i];
+    }
+    std::string fields;
+    for (auto it = data.begin(); it != data.end(); ++it) {
+        if (it != data.begin()) fields += ",";
+        fields += "\"" + it->first + "\":\"" + it->second + "\"";
+    }
+    std::string json =
+        "{\"tag\":[\"" + tags + "\"],\"message\":\"" + message +
+        "\",\"data\":{" + fields + "}}";
+    uint16_t len = htons(static_cast<uint16_t>(json.size()));
+    char buf[2 + 65536];
+    std::memcpy(buf, &len, 2);
+    std::memcpy(buf + 2, json.data(), json.size());
+    send(sock, buf, 2 + json.size(), 0);
+}
+
+// usage:
+// send_frame(sock, "hello", {"info"}, {{"foo", "bar"}});
+`,
+}
+
 func (h *Handler) code(w http.ResponseWriter, r *http.Request) {
 	lang := r.PathValue("lang")
-	code, ok := codeExamples[lang]
+	app, ok := appExamples[lang]
 	if !ok {
 		writeErr(w, http.StatusNotFound, "unknown language")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"lang": lang, "code": code})
+	fn := fnExamples[lang]
+	writeJSON(w, http.StatusOK, map[string]string{"lang": lang, "app": app, "fn": fn})
 }

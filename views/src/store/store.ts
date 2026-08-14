@@ -3,6 +3,8 @@ import { create } from 'zustand'
 const DEFAULT_GREEN = '#2e7d32'
 const DEFAULT_RED = '#c62828'
 
+const LANG_KEY = 'talk-mirror-lang'
+
 interface Settings {
   [key: string]: string
 }
@@ -12,20 +14,23 @@ interface AppState {
   themeColor: string
   paused: boolean
   wsConnected: boolean
+  lang: string
   settings: Settings
   setDarkMode: (v: boolean) => void
   toggleDark: () => void
   setThemeColor: (v: string) => void
   setPaused: (v: boolean) => void
   setWsConnected: (v: boolean) => void
+  setLang: (v: string) => void
   setSettings: (s: Settings) => void
 }
 
 export const useStore = create<AppState>((set) => ({
-  darkMode: true,
-  themeColor: DEFAULT_GREEN,
+  darkMode: false,
+  themeColor: DEFAULT_RED,
   paused: false,
   wsConnected: false,
+  lang: localStorage.getItem(LANG_KEY) ?? 'en',
   settings: {},
   setDarkMode: (v) => set({ darkMode: v }),
   toggleDark: () =>
@@ -39,5 +44,9 @@ export const useStore = create<AppState>((set) => ({
   setThemeColor: (v) => set({ themeColor: v }),
   setPaused: (v) => set({ paused: v }),
   setWsConnected: (v) => set({ wsConnected: v }),
+  setLang: (v) => {
+    localStorage.setItem(LANG_KEY, v)
+    set({ lang: v })
+  },
   setSettings: (s) => set({ settings: s }),
 }))

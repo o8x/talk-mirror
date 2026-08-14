@@ -14,7 +14,7 @@ export function buildTheme(dark: boolean, primary: string): Theme {
       },
       divider: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
     },
-    shape: { borderRadius: 12 },
+    shape: { borderRadius: 6 },
     typography: {
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',

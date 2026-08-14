@@ -22,9 +22,11 @@ import TrendChart from '../components/TrendChart'
 import { getConnections, getOverview, getSessions } from '../api/client'
 import { ws } from '../api/ws'
 import { formatCount, formatTime } from '../utils'
+import { useT } from '../i18n'
 import type { Connection, Overview, Session } from '../types'
 
 export default function Connections() {
+  const t = useT()
   const [connections, setConnections] = useState<Connection[]>([])
   const [overview, setOverview] = useState<Overview | null>(null)
   const [detail, setDetail] = useState<Connection | null>(null)
@@ -42,12 +44,12 @@ export default function Connections() {
 
   useEffect(() => {
     refresh()
-    const t = setInterval(refresh, 3000)
+    const timer = setInterval(refresh, 3000)
     const off = ws.on((ev) => {
       if (ev.type === 'connection' || ev.type === 'session') refresh()
     })
     return () => {
-      clearInterval(t)
+      clearInterval(timer)
       off()
     }
   }, [refresh])
@@ -74,7 +76,7 @@ export default function Connections() {
         <Grid item xs={12} md={8}>
           <Card sx={{ p: 2, height: '100%' }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Global activity
+              {t('connections.globalActivity')}
             </Typography>
             <TrendChart data={overview?.buckets ?? []} height={180} />
           </Card>
@@ -82,16 +84,16 @@ export default function Connections() {
         <Grid item xs={12} md={4}>
           <Grid container spacing={1.5}>
             <Grid item xs={6}>
-              <StatCard label="Connections" value={String(connections.length)} />
+              <StatCard label={t('connections.connections')} value={String(connections.length)} />
             </Grid>
             <Grid item xs={6}>
-              <StatCard label="Active sessions" value={String(activeSessions)} />
+              <StatCard label={t('home.activeSessions')} value={String(activeSessions)} />
             </Grid>
             <Grid item xs={6}>
-              <StatCard label="Total messages" value={formatCount(overview?.total_messages ?? 0)} />
+              <StatCard label={t('home.totalMessages')} value={formatCount(overview?.total_messages ?? 0)} />
             </Grid>
             <Grid item xs={6}>
-              <StatCard label="Messages / sec" value={(overview?.qps ?? 0).toFixed(0)} />
+              <StatCard label={t('home.messagesPerSec')} value={(overview?.qps ?? 0).toFixed(0)} />
             </Grid>
           </Grid>
         </Grid>
@@ -103,11 +105,11 @@ export default function Connections() {
             <TableHead>
               <TableRow>
                 <TableCell>IP</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Messages</TableCell>
-                <TableCell>Sessions</TableCell>
-                <TableCell>Active</TableCell>
-                <TableCell>Last seen</TableCell>
+                <TableCell>{t('common.status')}</TableCell>
+                <TableCell>{t('connections.messages')}</TableCell>
+                <TableCell>{t('connections.sessions')}</TableCell>
+                <TableCell>{t('common.active')}</TableCell>
+                <TableCell>{t('connections.lastSeen')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -121,7 +123,7 @@ export default function Connections() {
                   <TableCell sx={{ fontFamily: 'monospace' }}>{c.ip}</TableCell>
                   <TableCell>
                     <Chip
-                      label={c.status}
+                      label={c.status === 'active' ? t('common.active') : t('common.closed')}
                       size="small"
                       color={c.status === 'active' ? 'success' : 'default'}
                     />
@@ -135,7 +137,7 @@ export default function Connections() {
               {connections.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary', py: 4 }}>
-                    No connections yet.
+                    {t('connections.noConnections')}
                   </TableCell>
                 </TableRow>
               )}
@@ -146,24 +148,25 @@ export default function Connections() {
 
       <Dialog open={!!detail} onClose={() => setDetail(null)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          Connection {detail?.ip}
+          {detail ? t('connections.dialogTitle', { ip: detail.ip }) : ''}
           <IconButton onClick={() => setDetail(null)}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            first seen {detail ? formatTime(detail.first_seen) : ''} · last seen{' '}
-            {detail ? formatTime(detail.last_seen) : ''} · {detail?.message_count ?? 0} messages
+            {t('connections.firstSeen')} {detail ? formatTime(detail.first_seen) : ''} ·{' '}
+            {t('connections.lastSeen')} {detail ? formatTime(detail.last_seen) : ''} ·{' '}
+            {detail?.message_count ?? 0} {t('connections.messages')}
           </Typography>
           <Table size="small" sx={{ mt: 1 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Port</TableCell>
-                <TableCell>Protocol</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Messages</TableCell>
-                <TableCell>Last active</TableCell>
+                <TableCell>{t('sessions.port')}</TableCell>
+                <TableCell>{t('connections.protocol')}</TableCell>
+                <TableCell>{t('common.status')}</TableCell>
+                <TableCell>{t('connections.messages')}</TableCell>
+                <TableCell>{t('connections.lastActive')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -173,7 +176,7 @@ export default function Connections() {
                   <TableCell>{s.protocol}</TableCell>
                   <TableCell>
                     <Chip
-                      label={s.status}
+                      label={s.status === 'active' ? t('common.active') : t('common.closed')}
                       size="small"
                       color={s.status === 'active' ? 'success' : 'default'}
                     />
@@ -185,7 +188,7 @@ export default function Connections() {
               {detailSessions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ color: 'text.secondary' }}>
-                    No sessions for this connection.
+                    {t('connections.noSessions')}
                   </TableCell>
                 </TableRow>
               )}

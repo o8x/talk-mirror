@@ -5,10 +5,10 @@
 <h1 align="center">Talk-mirror</h1>
 
 <p align="center">
-  <a href="https://github.com/talk-mirror/talk-mirror/blob/main/LICENSE"><img src="https://img.shields.io/github/license/talk-mirror/talk-mirror" alt="License"></a>
-  <a href="https://github.com/talk-mirror/talk-mirror/releases"><img src="https://img.shields.io/github/v/release/talk-mirror/talk-mirror" alt="Release"></a>
-  <a href="https://github.com/talk-mirror/talk-mirror/blob/main/go.mod"><img src="https://img.shields.io/github/go-mod/go-version/talk-mirror/talk-mirror" alt="Go version"></a>
-  <a href="https://github.com/talk-mirror/talk-mirror/releases"><img src="https://img.shields.io/github/downloads/talk-mirror/talk-mirror/total" alt="Downloads"></a>
+  <a href="https://github.com/o8x/talk-mirror/blob/main/LICENSE"><img src="https://img.shields.io/github/license/o8x/talk-mirror" alt="License"></a>
+  <a href="https://github.com/o8x/talk-mirror/releases"><img src="https://img.shields.io/github/v/release/o8x/talk-mirror" alt="Release"></a>
+  <a href="https://github.com/o8x/talk-mirror/blob/main/go.mod"><img src="https://img.shields.io/github/go-mod/go-version/o8x/talk-mirror" alt="Go version"></a>
+  <a href="https://github.com/o8x/talk-mirror/releases"><img src="https://img.shields.io/github/downloads/o8x/talk-mirror/total" alt="Downloads"></a>
 </p>
 
 <p align="center">

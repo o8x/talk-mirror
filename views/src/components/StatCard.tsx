@@ -12,7 +12,7 @@ export default function StatCard({ label, value, hint }: Props) {
       sx={{
         px: 2,
         py: 1.5,
-        borderRadius: 2,
+        borderRadius: 1,
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',

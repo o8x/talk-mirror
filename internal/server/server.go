@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/talk-mirror/talk-mirror/internal/api"
-	"github.com/talk-mirror/talk-mirror/internal/hub"
+	"github.com/o8x/talk-mirror/internal/api"
+	"github.com/o8x/talk-mirror/internal/hub"
 )
 
 // Server is the TLS HTTP server serving the SPA, REST API and WebSocket.

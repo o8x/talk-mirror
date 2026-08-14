@@ -113,7 +113,7 @@ jobs:
         shell: bash
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} go build -trimpath \
-            -ldflags "$LDFLAGS -X github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror" \
+            -ldflags "$LDFLAGS -X github.com/o8x/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror" \
             -o talk-mirror .
 
       - name: Install nfpm
@@ -182,7 +182,7 @@ jobs:
         shell: bash
         run: |
           CGO_ENABLED=0 GOOS=darwin GOARCH=${{ matrix.arch }} go build -trimpath \
-            -ldflags "$LDFLAGS -X github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=/usr/local/var/talk-mirror" \
+            -ldflags "$LDFLAGS -X github.com/o8x/talk-mirror/internal/config.DefaultDataDir=/usr/local/var/talk-mirror" \
             -o talk-mirror .
 
       - name: Package pkg
@@ -241,7 +241,7 @@ jobs:
         shell: bash
         run: |
           CGO_ENABLED=0 GOOS=windows GOARCH=${{ matrix.arch }} go build -trimpath \
-            -ldflags "$LDFLAGS -X github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=C:\\ProgramData\\Talk-mirror" \
+            -ldflags "$LDFLAGS -X github.com/o8x/talk-mirror/internal/config.DefaultDataDir=C:\\ProgramData\\Talk-mirror" \
             -o talk-mirror.exe .
 
       - name: Install NSIS

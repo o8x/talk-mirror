@@ -1,6 +1,6 @@
 [Unit]
 Description=Talk-mirror remote debugger
-Documentation=https://github.com/talk-mirror/talk-mirror
+Documentation=https://github.com/o8x/talk-mirror
 After=network-online.target
 Wants=network-online.target
 

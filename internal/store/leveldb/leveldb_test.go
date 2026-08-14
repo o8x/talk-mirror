@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/talk-mirror/talk-mirror/internal/model"
+	"github.com/o8x/talk-mirror/internal/model"
 )
 
 func TestPutRange(t *testing.T) {

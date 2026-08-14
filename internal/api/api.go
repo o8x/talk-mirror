@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/talk-mirror/talk-mirror/internal/config"
-	"github.com/talk-mirror/talk-mirror/internal/hub"
-	"github.com/talk-mirror/talk-mirror/internal/model"
-	"github.com/talk-mirror/talk-mirror/internal/session"
-	"github.com/talk-mirror/talk-mirror/internal/state"
-	"github.com/talk-mirror/talk-mirror/internal/store/buffer"
-	"github.com/talk-mirror/talk-mirror/internal/store/sqlite"
+	"github.com/o8x/talk-mirror/internal/config"
+	"github.com/o8x/talk-mirror/internal/hub"
+	"github.com/o8x/talk-mirror/internal/model"
+	"github.com/o8x/talk-mirror/internal/session"
+	"github.com/o8x/talk-mirror/internal/state"
+	"github.com/o8x/talk-mirror/internal/store/buffer"
+	"github.com/o8x/talk-mirror/internal/store/sqlite"
 )
 
 // Handler serves the REST API.

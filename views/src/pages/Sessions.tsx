@@ -25,6 +25,7 @@ import TrendChart from '../components/TrendChart'
 import { getConnections, getMessages, getSessions } from '../api/client'
 import { ws } from '../api/ws'
 import { formatTime, nowNano } from '../utils'
+import { useT } from '../i18n'
 import type { Connection, MessageEvent, Session } from '../types'
 
 const MAX_LIVE = 10000
@@ -37,7 +38,7 @@ const ranges = [
   { label: '1d', seconds: 86400 },
 ]
 
-function Row({ m }: { m: MessageEvent }) {
+function Row({ m, t }: { m: MessageEvent; t: (k: string) => string }) {
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -50,8 +51,8 @@ function Row({ m }: { m: MessageEvent }) {
         <TableCell sx={{ fontFamily: 'monospace' }}>{m.ip}</TableCell>
         <TableCell sx={{ fontFamily: 'monospace' }}>{m.port}</TableCell>
         <TableCell>
-          {(m.tag ?? []).map((t) => (
-            <Chip key={t} label={t} size="small" variant="outlined" sx={{ mr: 0.5 }} />
+          {(m.tag ?? []).map((tag) => (
+            <Chip key={tag} label={tag} size="small" variant="outlined" sx={{ mr: 0.5 }} />
           ))}
         </TableCell>
         <TableCell>{m.message}</TableCell>
@@ -64,7 +65,7 @@ function Row({ m }: { m: MessageEvent }) {
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ py: 2, pl: 6 }}>
               <Typography variant="caption" color="text.secondary">
-                detail
+                {t('sessions.detail')}
               </Typography>
               <pre
                 style={{
@@ -97,6 +98,7 @@ function Row({ m }: { m: MessageEvent }) {
 }
 
 export default function Sessions() {
+  const t = useT()
   const [connections, setConnections] = useState<Connection[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [selConn, setSelConn] = useState('')
@@ -230,10 +232,10 @@ export default function Sessions() {
     <Box>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Connection</InputLabel>
+          <InputLabel>{t('sessions.connection')}</InputLabel>
           <Select
             value={selConn}
-            label="Connection"
+            label={t('sessions.connection')}
             onChange={(e) => {
               const cid = e.target.value
               setSelConn(cid)
@@ -241,7 +243,7 @@ export default function Sessions() {
               setSelSession(first?.id ?? '')
             }}
           >
-            <MenuItem value="">All</MenuItem>
+            <MenuItem value="">{t('common.all')}</MenuItem>
             {connections.map((c) => (
               <MenuItem key={c.id} value={c.id}>
                 {c.ip}
@@ -250,13 +252,13 @@ export default function Sessions() {
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Session</InputLabel>
+          <InputLabel>{t('sessions.session')}</InputLabel>
           <Select
             value={selSession}
-            label="Session"
+            label={t('sessions.session')}
             onChange={(e) => setSelSession(e.target.value)}
           >
-            <MenuItem value="">None</MenuItem>
+            <MenuItem value="">{t('common.none')}</MenuItem>
             {filteredSessions.map((s) => (
               <MenuItem key={s.id} value={s.id}>
                 {s.ip}:{s.port}/{s.protocol}
@@ -268,7 +270,7 @@ export default function Sessions() {
           {ranges.map((r) => (
             <Chip
               key={r.label}
-              label={r.label}
+              label={r.label === 'Live' ? t('sessions.live') : r.label}
               size="small"
               color={rangeSeconds === r.seconds ? 'primary' : 'default'}
               variant={rangeSeconds === r.seconds ? 'filled' : 'outlined'}
@@ -283,8 +285,10 @@ export default function Sessions() {
 
       <Card sx={{ p: 2, mb: 2 }}>
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          {rangeSeconds > 0 ? `Messages (${rangeSeconds}s window)` : 'Live messages'} · brush to
-          filter a time range
+          {rangeSeconds > 0
+            ? t('sessions.windowMessages', { s: rangeSeconds })
+            : t('sessions.liveMessages')}{' '}
+          · {t('sessions.brushHint')}
         </Typography>
         <TrendChart data={trendData} height={220} brushable onBrush={handleBrush} />
       </Card>
@@ -295,21 +299,21 @@ export default function Sessions() {
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox" />
-                <TableCell>IP</TableCell>
-                <TableCell>Port</TableCell>
-                <TableCell>Tag</TableCell>
-                <TableCell>Message</TableCell>
-                <TableCell>Time</TableCell>
+                <TableCell>{t('sessions.ip')}</TableCell>
+                <TableCell>{t('sessions.port')}</TableCell>
+                <TableCell>{t('sessions.tag')}</TableCell>
+                <TableCell>{t('sessions.message')}</TableCell>
+                <TableCell>{t('sessions.time')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {pageMessages.map((m) => (
-                <Row key={`${m.session_id}-${m.seq}`} m={m} />
+                <Row key={`${m.session_id}-${m.seq}`} m={m} t={t} />
               ))}
               {pageMessages.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary', py: 4 }}>
-                    No messages yet.
+                    {t('sessions.noMessages')}
                   </TableCell>
                 </TableRow>
               )}

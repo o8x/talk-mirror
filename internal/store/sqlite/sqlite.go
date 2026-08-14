@@ -6,7 +6,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/talk-mirror/talk-mirror/internal/model"
+	"github.com/o8x/talk-mirror/internal/model"
 )
 
 // Store persists client/session metadata and settings.

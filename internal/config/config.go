@@ -15,14 +15,14 @@ const (
 	DefaultDataHost = "0.0.0.0"
 	DefaultDataPort = 3000
 
-	DefaultThemeColor = "#2e7d32"
-	DefaultDarkMode   = true
+	DefaultThemeColor = "#c62828"
+	DefaultDarkMode   = false
 	DefaultPaused     = false
 )
 
 // DefaultDataDir is the fallback value of the -d flag. Packaged builds override
 // it at link time, e.g. -ldflags "-X
-// github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror".
+// github.com/o8x/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror".
 var DefaultDataDir = "./data"
 
 // Config carries all runtime configuration resolved from flags and settings.

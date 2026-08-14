@@ -53,6 +53,6 @@ export function setPause(paused: boolean): Promise<{ paused: boolean }> {
   })
 }
 
-export function getCode(lang: string): Promise<{ lang: string; code: string }> {
-  return request<{ lang: string; code: string }>(`/api/code/${lang}`)
+export function getCode(lang: string): Promise<{ lang: string; app: string; fn: string }> {
+  return request<{ lang: string; app: string; fn: string }>(`/api/code/${lang}`)
 }

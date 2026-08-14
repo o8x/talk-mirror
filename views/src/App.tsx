@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { lazy, Suspense, useEffect, useMemo } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { buildTheme } from './theme/theme'
@@ -9,8 +9,9 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Sessions from './pages/Sessions'
 import Connections from './pages/Connections'
-import Access from './pages/Access'
 import Settings from './pages/Settings'
+
+const Access = lazy(() => import('./pages/Access'))
 
 export default function App() {
   const darkMode = useStore((s) => s.darkMode)
@@ -24,7 +25,7 @@ export default function App() {
     getSettings()
       .then((s) => {
         setSettings(s)
-        if (s.dark_mode === 'false') setDarkMode(false)
+        if (s.dark_mode !== undefined) setDarkMode(s.dark_mode !== 'false')
         if (s.theme_color) setThemeColor(s.theme_color)
         if (s.paused === 'true') setPaused(true)
       })
@@ -46,7 +47,14 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="connections" element={<Connections />} />
-            <Route path="access" element={<Access />} />
+            <Route
+              path="access"
+              element={
+                <Suspense fallback={null}>
+                  <Access />
+                </Suspense>
+              }
+            />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

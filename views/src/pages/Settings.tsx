@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { getSettings, saveSettings } from '../api/client'
 import { useStore } from '../store/store'
+import { useT } from '../i18n'
 
 interface FormState {
   web_host: string
@@ -25,6 +26,7 @@ interface FormState {
 }
 
 export default function Settings() {
+  const t = useT()
   const darkMode = useStore((s) => s.darkMode)
   const toggleDark = useStore((s) => s.toggleDark)
   const setThemeColor = useStore((s) => s.setThemeColor)
@@ -35,7 +37,7 @@ export default function Settings() {
     data_port: '3000',
     tls_cert: '',
     tls_key: '',
-    theme_color: '#2e7d32',
+    theme_color: '#c62828',
   })
   const [readonly, setReadonly] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
@@ -50,7 +52,7 @@ export default function Settings() {
           data_port: s.data_port ?? '3000',
           tls_cert: s.tls_cert ?? '',
           tls_key: s.tls_key ?? '',
-          theme_color: s.theme_color ?? '#2e7d32',
+          theme_color: s.theme_color ?? '#c62828',
         })
         setReadonly({ leveldb_dir: s.leveldb_dir ?? '', sqlite_file: s.sqlite_file ?? '' })
       })
@@ -60,8 +62,10 @@ export default function Settings() {
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
+  const shrink = { shrink: true }
+
   const onSave = async () => {
-    const body: Record<string, string> = { ...form }
+    const body: Record<string, string> = { ...form, dark_mode: String(darkMode) }
     try {
       await saveSettings(body)
       if (body.theme_color) setThemeColor(body.theme_color)
@@ -72,88 +76,176 @@ export default function Settings() {
   }
 
   return (
-    <Box sx={{ maxWidth: 640 }}>
+    <Box sx={{ maxWidth: 680 }}>
       <Card sx={{ p: 3 }}>
         <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Network
+          {t('settings.network')}
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={8}>
-            <TextField fullWidth label="Web address" size="small" value={form.web_host} onChange={set('web_host')} />
+          <Grid item xs={12} sm={8}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.webAddress')}
+              value={form.web_host}
+              onChange={set('web_host')}
+              InputLabelProps={shrink}
+            />
           </Grid>
-          <Grid item xs={4}>
-            <TextField fullWidth label="Web port" size="small" value={form.web_port} onChange={set('web_port')} />
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.webPort')}
+              value={form.web_port}
+              onChange={set('web_port')}
+              InputLabelProps={shrink}
+            />
           </Grid>
-          <Grid item xs={8}>
-            <TextField fullWidth label="Data address" size="small" value={form.data_host} onChange={set('data_host')} />
+          <Grid item xs={12} sm={8}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.dataAddress')}
+              value={form.data_host}
+              onChange={set('data_host')}
+              InputLabelProps={shrink}
+            />
           </Grid>
-          <Grid item xs={4}>
-            <TextField fullWidth label="Data port" size="small" value={form.data_port} onChange={set('data_port')} />
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.dataPort')}
+              value={form.data_port}
+              onChange={set('data_port')}
+              InputLabelProps={shrink}
+            />
           </Grid>
         </Grid>
 
         <Divider sx={{ my: 3 }} />
         <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          TLS certificate
+          {t('settings.tls')}
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={6}>
-            <TextField fullWidth label="Certificate path" size="small" value={form.tls_cert} onChange={set('tls_cert')} placeholder="auto-generated if empty" />
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.certPath')}
+              value={form.tls_cert}
+              onChange={set('tls_cert')}
+              placeholder="auto-generated if empty"
+              InputLabelProps={shrink}
+            />
           </Grid>
-          <Grid item xs={6}>
-            <TextField fullWidth label="Key path" size="small" value={form.tls_key} onChange={set('tls_key')} placeholder="auto-generated if empty" />
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.keyPath')}
+              value={form.tls_key}
+              onChange={set('tls_key')}
+              placeholder="auto-generated if empty"
+              InputLabelProps={shrink}
+            />
           </Grid>
         </Grid>
 
         <Divider sx={{ my: 3 }} />
         <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Appearance
+          {t('settings.appearance')}
         </Typography>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={6}>
-            <Typography variant="body2">Theme color</Typography>
-            <input
-              type="color"
-              value={form.theme_color}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, theme_color: e.target.value }))
-                setThemeColor(e.target.value)
-              }}
-              style={{ width: 64, height: 40, border: 'none', background: 'transparent', cursor: 'pointer' }}
-            />
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {t('settings.themeColor')}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                component="input"
+                type="color"
+                value={form.theme_color}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, theme_color: e.target.value }))
+                  setThemeColor(e.target.value)
+                }}
+                sx={{
+                  width: 44,
+                  height: 36,
+                  p: 0,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  bgcolor: 'transparent',
+                  cursor: 'pointer',
+                }}
+              />
+              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                {form.theme_color}
+              </Typography>
+            </Box>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12} sm={6}>
             <FormControlLabel
-              control={<Switch checked={darkMode} onChange={() => toggleDark()} />}
-              label="Dark mode"
+              control={
+                <Switch
+                  checked={darkMode}
+                  onChange={() => {
+                    toggleDark()
+                    saveSettings({ dark_mode: String(!darkMode) }).catch(() => {})
+                  }}
+                />
+              }
+              label={t('settings.darkMode')}
             />
           </Grid>
         </Grid>
 
         <Divider sx={{ my: 3 }} />
         <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Storage (read-only)
+          {t('settings.storage')}
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12}>
-            <TextField fullWidth label="SQLite file" size="small" value={readonly.sqlite_file} InputProps={{ readOnly: true }} />
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.sqliteFile')}
+              value={readonly.sqlite_file}
+              InputProps={{ readOnly: true }}
+              InputLabelProps={shrink}
+            />
           </Grid>
           <Grid item xs={12}>
-            <TextField fullWidth label="LevelDB directory" size="small" value={readonly.leveldb_dir} InputProps={{ readOnly: true }} />
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.leveldbDir')}
+              value={readonly.leveldb_dir}
+              InputProps={{ readOnly: true }}
+              InputLabelProps={shrink}
+            />
           </Grid>
         </Grid>
 
         <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
           <Button variant="contained" onClick={onSave}>
-            Save
+            {t('common.save')}
           </Button>
           <Typography variant="caption" color="text.secondary">
-            Port, address and TLS changes require a restart.
+            {t('settings.restartNote')}
           </Typography>
         </Box>
       </Card>
 
-      <Snackbar open={saved} autoHideDuration={2000} onClose={() => setSaved(false)} message="Settings saved" />
+      <Snackbar
+        open={saved}
+        autoHideDuration={2000}
+        onClose={() => setSaved(false)}
+        message={t('settings.saved')}
+      />
     </Box>
   )
 }

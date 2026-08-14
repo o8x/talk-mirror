@@ -8,7 +8,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
 
-	"github.com/talk-mirror/talk-mirror/internal/model"
+	"github.com/o8x/talk-mirror/internal/model"
 )
 
 // Store is the append-only archive for raw message records.

@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/talk-mirror/talk-mirror/internal/hub"
-	"github.com/talk-mirror/talk-mirror/internal/model"
-	"github.com/talk-mirror/talk-mirror/internal/store/buffer"
-	"github.com/talk-mirror/talk-mirror/internal/store/sqlite"
+	"github.com/o8x/talk-mirror/internal/hub"
+	"github.com/o8x/talk-mirror/internal/model"
+	"github.com/o8x/talk-mirror/internal/store/buffer"
+	"github.com/o8x/talk-mirror/internal/store/sqlite"
 )
 
 const (
