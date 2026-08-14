@@ -33,6 +33,7 @@ import GitHubIcon from '@mui/icons-material/GitHub'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { useStore } from '../store/store'
 import { setPause, saveSettings, clearStoredKey } from '../api/client'
+import { ws } from '../api/ws'
 import { LANGS, useLang, useT } from '../i18n'
 import logoUrl from '../assets/logo.svg'
 
@@ -166,6 +167,7 @@ export default function Layout() {
             <Tooltip title={t('common.logout')}>
               <IconButton
                 onClick={() => {
+                  ws.close()
                   clearKey()
                   clearStoredKey()
                 }}

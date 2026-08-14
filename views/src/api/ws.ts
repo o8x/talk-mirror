@@ -13,6 +13,21 @@ class WSClient {
 
   connect() {
     this.closed = false
+    if (this.reconnectTimer != null) {
+      window.clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    if (this.ws) {
+      this.ws.onopen = null
+      this.ws.onclose = null
+      this.ws.onerror = null
+      this.ws.onmessage = null
+      try {
+        this.ws.close()
+      } catch {
+        /* ignore */
+      }
+    }
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     const url = `${proto}://${location.host}/ws`
     this.ws = new WebSocket(url)
@@ -38,6 +53,26 @@ class WSClient {
       } catch {
         /* ignore malformed */
       }
+    }
+  }
+
+  close() {
+    this.closed = true
+    if (this.reconnectTimer != null) {
+      window.clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    if (this.ws) {
+      this.ws.onopen = null
+      this.ws.onclose = null
+      this.ws.onerror = null
+      this.ws.onmessage = null
+      try {
+        this.ws.close()
+      } catch {
+        /* ignore */
+      }
+      this.ws = null
     }
   }
 

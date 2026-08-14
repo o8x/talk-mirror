@@ -87,6 +87,8 @@ export const en = {
   'test.duration': 'Duration',
   'test.preview': 'Data preview',
   'test.generatedCode': 'Test code',
+  'test.localIp': 'Local IP',
+  'test.port': 'Port',
   'test.hint': 'Sends a message to the server via the HTTP ingest endpoint (API port). The talk port is where raw TCP/UDP clients connect.',
 
   'settings.network': 'Network',

@@ -211,6 +211,24 @@ export default function Sessions() {
       .catch(() => setTrendData([]))
   }, [selSession, rangeSeconds])
 
+  // Live-mode polling fallback: keep the list and trend fresh even if the
+  // WebSocket push is unavailable.
+  useEffect(() => {
+    if (!selSession || rangeSeconds > 0) return
+    const timer = window.setInterval(() => {
+      getMessages(selSession, { limit: 500 })
+        .then((res) => {
+          setTotal(res.total)
+          setMessages(res.items)
+        })
+        .catch(() => {})
+      getSessionBuckets(selSession, { seconds: 300 })
+        .then(setTrendData)
+        .catch(() => {})
+    }, 3000)
+    return () => window.clearInterval(timer)
+  }, [selSession, rangeSeconds])
+
   // realtime push
   useEffect(() => {
     const off = ws.on((ev) => {

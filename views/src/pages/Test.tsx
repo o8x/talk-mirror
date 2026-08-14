@@ -129,6 +129,7 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
 export default function Test() {
   const t = useT()
   const darkMode = useStore((s) => s.darkMode)
+  const localIp = useStore((s) => s.localIp)
   const saved = loadForm()
   const [address, setAddress] = useState(() => saved.address ?? window.location.hostname ?? '127.0.0.1')
   const [talkPort, setTalkPort] = useState(() => saved.talkPort ?? '3000')
@@ -140,6 +141,7 @@ export default function Test() {
   const [result, setResult] = useState<Result | null>(null)
   const [running, setRunning] = useState(false)
   const [lang, setLang] = useState<'go' | 'python'>('go')
+  const apiPort = window.location.port || '443'
 
   useEffect(() => {
     localStorage.setItem(FORM_KEY, JSON.stringify({ address, talkPort, key, message, fields }))
@@ -171,7 +173,6 @@ export default function Test() {
   const run = async () => {
     setRunning(true)
     setResult(null)
-    const apiPort = window.location.port || '443'
     const baseUrl = `https://${address.trim()}:${apiPort}`
     const started = performance.now()
     try {
@@ -271,18 +272,39 @@ export default function Test() {
               </Grid>
             </Grid>
 
-            <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ mt: 3 }}>
               <Button variant="contained" startIcon={<SendIcon />} onClick={run} disabled={running}>
                 {t('test.run')}
               </Button>
-              {result && (
-                <Alert severity={result.ok ? 'success' : 'error'} sx={{ flex: 1 }}>
-                  {result.ok
-                    ? `${t('test.success')} · ${t('test.duration')}: ${result.ms} ms`
-                    : `${t('test.failed')}: ${result.error}`}
-                </Alert>
-              )}
             </Box>
+
+            {result && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: result.ok ? 'success.main' : 'error.main',
+                  bgcolor: 'background.paper',
+                }}
+              >
+                <Alert severity={result.ok ? 'success' : 'error'} sx={{ mb: 1 }}>
+                  {result.ok ? t('test.success') : `${t('test.failed')}: ${result.error}`}
+                </Alert>
+                <Stack direction="row" spacing={3}>
+                  <Typography variant="body2">
+                    {t('test.duration')}: <strong>{result.ms} ms</strong>
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    {t('test.localIp')}: {localIp || '-'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    {t('test.port')}: {apiPort}
+                  </Typography>
+                </Stack>
+              </Box>
+            )}
           </Card>
         </Grid>
 

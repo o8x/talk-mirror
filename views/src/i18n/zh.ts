@@ -89,6 +89,8 @@ export const zh: Dict = {
   'test.duration': '耗时',
   'test.preview': '数据预览',
   'test.generatedCode': '测试代码',
+  'test.localIp': '本机 IP',
+  'test.port': '端口',
   'test.hint': '通过 HTTP 摄入端点（API 端口）向服务器发送一条消息；talk 端口是原始 TCP/UDP 客户端连接的端口。',
 
   'settings.network': '网络',
