@@ -62,11 +62,17 @@ func (h *Hub) register(c *client) {
 
 func (h *Hub) unregister(c *client) {
 	h.mu.Lock()
+	h.unregisterLocked(c)
+	h.mu.Unlock()
+}
+
+// unregisterLocked removes a client and closes its send channel. Caller must
+// hold h.mu.
+func (h *Hub) unregisterLocked(c *client) {
 	if _, ok := h.clients[c]; ok {
 		delete(h.clients, c)
 		close(c.send)
 	}
-	h.mu.Unlock()
 	h.log.Info("websocket client disconnected", "clients", len(h.clients))
 }
 
@@ -78,26 +84,23 @@ func (h *Hub) SendMessage(sessionID, clientID string, data any) {
 	if err != nil {
 		return
 	}
-	h.mu.RLock()
-	targets := make([]*client, 0, len(h.clients))
+	h.mu.Lock()
 	for c := range h.clients {
 		c.mu.RLock()
 		match := (c.filterSession == "" && c.filterConnection == "") ||
 			(c.filterSession != "" && c.filterSession == sessionID) ||
 			(c.filterConnection != "" && c.filterConnection == clientID)
 		c.mu.RUnlock()
-		if match {
-			targets = append(targets, c)
+		if !match {
+			continue
 		}
-	}
-	h.mu.RUnlock()
-	for _, c := range targets {
 		select {
 		case c.send <- payload:
 		default:
-			h.unregister(c)
+			h.unregisterLocked(c)
 		}
 	}
+	h.mu.Unlock()
 }
 
 // Broadcast sends an event to every connected client.
@@ -107,19 +110,15 @@ func (h *Hub) Broadcast(evType string, data any) {
 	if err != nil {
 		return
 	}
-	h.mu.RLock()
-	targets := make([]*client, 0, len(h.clients))
+	h.mu.Lock()
 	for c := range h.clients {
-		targets = append(targets, c)
-	}
-	h.mu.RUnlock()
-	for _, c := range targets {
 		select {
 		case c.send <- payload:
 		default:
-			h.unregister(c)
+			h.unregisterLocked(c)
 		}
 	}
+	h.mu.Unlock()
 }
 
 // Count returns the number of connected clients.
