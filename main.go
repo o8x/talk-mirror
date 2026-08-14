@@ -108,6 +108,9 @@ func runApp(ctx context.Context, cfg *config.Config) error {
 	if dataPort == 0 {
 		dataPort = config.DefaultDataPort
 	}
+	if cfg.TalkPort != 0 {
+		dataPort = cfg.TalkPort
+	}
 	ing := ingest.New(dataHost, dataPort, mgr, gate, log)
 	if err := ing.Start(); err != nil {
 		return err

@@ -65,6 +65,7 @@ make build
 | `-w` | *(数据目录)* | 日志文件路径；默认 `<data-dir>/talk-mirror.log`。 |
 | `--host` | *(设置)* | 覆盖 Web 监听地址（未提供则用 `web_host` 设置）。 |
 | `--port` | *(设置)* | 覆盖 Web 监听端口（未提供则用 `web_port` 设置）。 |
+| `--talk-port` | *(设置)* | 覆盖数据监听端口（未提供则用 `data_port` 设置）。 |
 
 默认数据目录在打包时内置：
 

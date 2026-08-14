@@ -27,11 +27,12 @@ var DefaultDataDir = "./data"
 
 // Config carries all runtime configuration resolved from flags and settings.
 type Config struct {
-	DataDir string // -d, root data folder
-	LogFile string // -w, optional explicit log file path
-	ExeDir  string // directory of the running binary
-	Host    string // --host, override web listen address (empty = use settings)
-	Port    int    // --port, override web listen port (0 = use settings)
+	DataDir  string // -d, root data folder
+	LogFile  string // -w, optional explicit log file path
+	ExeDir   string // directory of the running binary
+	Host     string // --host, override web listen address (empty = use settings)
+	Port     int    // --port, override web listen port (0 = use settings)
+	TalkPort int    // --talk-port, override data listen port (0 = use settings)
 }
 
 // Paths derived from DataDir.
@@ -52,6 +53,7 @@ func ParseFlags() (*Config, error) {
 	logFile := flag.String("w", "", "log file path (defaults to <data-dir>/talk-mirror.log)")
 	host := flag.String("host", "", "override web listen address (default: use settings)")
 	port := flag.Int("port", 0, "override web listen port (default: use settings)")
+	talkPort := flag.Int("talk-port", 0, "override data listen port (default: use settings)")
 	flag.Parse()
 
 	absData, err := filepath.Abs(*dataDir)
@@ -70,11 +72,12 @@ func ParseFlags() (*Config, error) {
 	}
 
 	return &Config{
-		DataDir: absData,
-		LogFile: absLog,
-		ExeDir:  filepath.Dir(exe),
-		Host:    *host,
-		Port:    *port,
+		DataDir:  absData,
+		LogFile:  absLog,
+		ExeDir:   filepath.Dir(exe),
+		Host:     *host,
+		Port:     *port,
+		TalkPort: *talkPort,
 	}, nil
 }
 
