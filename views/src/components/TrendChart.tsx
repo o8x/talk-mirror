@@ -42,7 +42,7 @@ export default function TrendChart({ data, height = 240, brushable = false, onBr
         max: (value: { min: number; max: number }) => {
           const m = value.max
           if (!Number.isFinite(m) || m <= 0) return 5
-          return Math.max(Math.ceil((m * 1.15) / 5) * 5, 5)
+          return Math.max(Math.ceil(m * 1.15), 5)
         },
         axisLine: { show: false },
         axisLabel: { color: pal.text, fontSize: 11 },
