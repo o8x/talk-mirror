@@ -81,9 +81,9 @@ Each GitHub Release ships native packages in addition to portable binaries.
 
 | Format | Install | Manage |
 |--------|---------|--------|
-| `.deb` | `sudo apt install ./talk-mirror_<v>_amd64.deb` | `systemctl status talk-mirror` |
-| `.rpm` | `sudo dnf install ./talk-mirror-<v>-amd64.rpm` | `systemctl status talk-mirror` |
-| `.run` | `sudo bash talk-mirror-<v>-amd64.run` | `systemctl status talk-mirror` |
+| `.deb` | `sudo apt install ./talk-mirror-v<version>_linux-amd64.deb` | `systemctl status talk-mirror` |
+| `.rpm` | `sudo dnf install ./talk-mirror-v<version>_linux-amd64.rpm` | `systemctl status talk-mirror` |
+| `.run` | `sudo bash talk-mirror-v<version>_linux-amd64.run` | `systemctl status talk-mirror` |
 
 The service runs as a dedicated `talk-mirror` system user with
 `CAP_NET_BIND_SERVICE` (so it can bind port 443) and stores data in
@@ -92,7 +92,7 @@ The service runs as a dedicated `talk-mirror` system user with
 ### macOS
 
 ```bash
-sudo installer -pkg talk-mirror-<v>-arm64.pkg -target /
+sudo installer -pkg talk-mirror-v<version>_macos-arm64.pkg -target /
 ```
 
 Installs `/usr/local/bin/talk-mirror` and a LaunchDaemon
@@ -107,7 +107,7 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.talk-mirror.plist
 
 ### Windows
 
-Run `talk-mirror-<v>-amd64-setup.exe`. The installer registers the binary as the
+Run `talk-mirror-v<version>_windows-amd64.exe`. The installer registers the binary as the
 Windows service `TalkMirror` (auto-start) and stores data in
 `%ProgramData%\Talk-mirror`. Manage it with:
 

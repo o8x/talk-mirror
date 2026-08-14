@@ -33,6 +33,6 @@ pkgbuild \
   --identifier com.talk-mirror \
   --version "$VERSION" \
   --install-location / \
-  "$OUT/talk-mirror-${VERSION}-${ARCH}.pkg"
+  "$OUT/talk-mirror-v${VERSION}_macos-${ARCH}.pkg"
 
-echo "built: $OUT/talk-mirror-${VERSION}-${ARCH}.pkg"
+echo "built: $OUT/talk-mirror-v${VERSION}_macos-${ARCH}.pkg"

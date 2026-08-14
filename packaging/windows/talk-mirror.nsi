@@ -13,7 +13,7 @@
 
 Name "${APPNAME}"
 Caption "${APPNAME} Setup"
-OutFile "talk-mirror-${VERSION}-${ARCH}-setup.exe"
+OutFile "talk-mirror-v${VERSION}_windows-${ARCH}.exe"
 InstallDir "$PROGRAMFILES64\Talk-mirror"
 InstallDirRegKey HKLM "Software\Talk-mirror" "InstallDir"
 RequestExecutionLevel admin

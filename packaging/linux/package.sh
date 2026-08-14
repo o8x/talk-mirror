@@ -19,8 +19,8 @@ sed -e "s/__ARCH__/${ARCH}/g" \
     -e "s#__BINARY__#${BINARY}#g" \
     packaging/linux/nfpm.yaml > "$CFG"
 
-nfpm package --config "$CFG" --packager deb --target "$OUT/talk-mirror_${VERSION}_${ARCH}.deb"
-nfpm package --config "$CFG" --packager rpm --target "$OUT/talk-mirror-${VERSION}-${ARCH}.rpm"
+nfpm package --config "$CFG" --packager deb --target "$OUT/talk-mirror-v${VERSION}_linux-${ARCH}.deb"
+nfpm package --config "$CFG" --packager rpm --target "$OUT/talk-mirror-v${VERSION}_linux-${ARCH}.rpm"
 
 echo "built:"
 ls -la "$OUT"

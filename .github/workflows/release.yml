@@ -14,61 +14,6 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Portable binaries (single self-contained binary, default data dir ./data).
-  # ---------------------------------------------------------------------------
-  build:
-    name: build (${{ matrix.goos }}/${{ matrix.goarch }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { goos: linux,   goarch: amd64 }
-          - { goos: linux,   goarch: arm64 }
-          - { goos: darwin,  goarch: amd64 }
-          - { goos: darwin,  goarch: arm64 }
-          - { goos: windows, goarch: amd64 }
-          - { goos: windows, goarch: arm64 }
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: views/pnpm-lock.yaml
-
-      - name: Build frontend
-        run: |
-          cd views
-          pnpm install --frozen-lockfile
-          pnpm build
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Build backend
-        shell: bash
-        run: |
-          EXT=""
-          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
-          BIN="talk-mirror-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}"
-          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-            go build -trimpath -ldflags "$LDFLAGS" -o "$BIN" .
-          echo "BIN=$BIN" >> "$GITHUB_ENV"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: talk-mirror-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: ${{ env.BIN }}
-          if-no-files-found: error
-
-  # ---------------------------------------------------------------------------
   # Linux packages: .deb, .rpm (systemd) and .run (self-extracting).
   # ---------------------------------------------------------------------------
   linux:
@@ -257,20 +202,20 @@ jobs:
           Push-Location packaging\windows
           & $nsis /DVERSION=$env:VERSION /DARCH=${{ matrix.arch }} talk-mirror.nsi
           Pop-Location
-          Move-Item -Path packaging\windows\talk-mirror-*-setup.exe -Destination . -Force
+          Move-Item -Path packaging\windows\talk-mirror-v*_windows-*.exe -Destination . -Force
 
       - uses: actions/upload-artifact@v4
         with:
           name: talk-mirror-windows-${{ matrix.arch }}-installer
-          path: talk-mirror-*-setup.exe
+          path: talk-mirror-v*_windows-*.exe
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
-  # Publish everything as a GitHub Release.
+  # Publish the packages as a GitHub Release.
   # ---------------------------------------------------------------------------
   release:
     name: publish release
-    needs: [ build, linux, macos, windows ]
+    needs: [ linux, macos, windows ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

@@ -81,9 +81,9 @@ make build
 
 | 格式 | 安装 | 管理 |
 |------|------|------|
-| `.deb` | `sudo apt install ./talk-mirror_<v>_amd64.deb` | `systemctl status talk-mirror` |
-| `.rpm` | `sudo dnf install ./talk-mirror-<v>-amd64.rpm` | `systemctl status talk-mirror` |
-| `.run` | `sudo bash talk-mirror-<v>-amd64.run` | `systemctl status talk-mirror` |
+| `.deb` | `sudo apt install ./talk-mirror-v<version>_linux-amd64.deb` | `systemctl status talk-mirror` |
+| `.rpm` | `sudo dnf install ./talk-mirror-v<version>_linux-amd64.rpm` | `systemctl status talk-mirror` |
+| `.run` | `sudo bash talk-mirror-v<version>_linux-amd64.run` | `systemctl status talk-mirror` |
 
 服务以专用系统用户 `talk-mirror` 运行，并授予 `CAP_NET_BIND_SERVICE`（以便绑定 443 端口），
 数据存放在 `/var/lib/talk-mirror`。
@@ -91,7 +91,7 @@ make build
 ### macOS
 
 ```bash
-sudo installer -pkg talk-mirror-<v>-arm64.pkg -target /
+sudo installer -pkg talk-mirror-v<version>_macos-arm64.pkg -target /
 ```
 
 安装 `/usr/local/bin/talk-mirror` 以及一个开机自启的 LaunchDaemon
@@ -105,7 +105,7 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.talk-mirror.plist
 
 ### Windows
 
-运行 `talk-mirror-<v>-amd64-setup.exe`。安装程序会将二进制注册为 Windows 服务
+运行 `talk-mirror-v<version>_windows-amd64.exe`。安装程序会将二进制注册为 Windows 服务
 `TalkMirror`（开机自启），数据存放在 `%ProgramData%\Talk-mirror`。管理命令：
 
 ```powershell

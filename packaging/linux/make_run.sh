@@ -17,7 +17,7 @@ cp "$BINARY" "$STAGING/talk-mirror"
 cp packaging/linux/talk-mirror.service "$STAGING/talk-mirror.service"
 chmod 0755 "$STAGING/talk-mirror"
 
-RUN_FILE="$OUT/talk-mirror-${VERSION}-${ARCH}.run"
+RUN_FILE="$OUT/talk-mirror-v${VERSION}_linux-${ARCH}.run"
 
 # The installer header. Everything after the __ARCHIVE_BELOW__ marker is the
 # gzip-compressed tar payload.
