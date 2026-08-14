@@ -13,8 +13,8 @@ const LANGS: { key: string; label: string; prism: string }[] = [
 ]
 
 interface CodeSet {
+  class: string
   app: string
-  fn: string
 }
 
 export default function Access() {
@@ -26,14 +26,14 @@ export default function Access() {
     Promise.all(
       LANGS.map((l) =>
         getCode(l.key)
-          .then((r) => [l.key, { app: r.app, fn: r.fn }] as const)
-          .catch(() => [l.key, { app: '', fn: '' }] as const),
+          .then((r) => [l.key, { class: r.class, app: r.app }] as const)
+          .catch(() => [l.key, { class: '', app: '' }] as const),
       ),
     ).then((entries) => setCodes(Object.fromEntries(entries)))
   }, [])
 
   const lang = LANGS[tab]
-  const code = codes[lang.key] ?? { app: '', fn: '' }
+  const code = codes[lang.key] ?? { class: '', app: '' }
 
   return (
     <Box>
@@ -52,10 +52,10 @@ export default function Access() {
         <Box sx={{ p: 2 }}>
           <Grid container spacing={2}>
             <Grid item xs={12} lg={6}>
-              <CodeBlock code={code.app} language={lang.prism} title={t('access.appMode')} />
+              <CodeBlock code={code.class} language={lang.prism} title={t('access.classMode')} />
             </Grid>
             <Grid item xs={12} lg={6}>
-              <CodeBlock code={code.fn} language={lang.prism} title={t('access.fnMode')} />
+              <CodeBlock code={code.app} language={lang.prism} title={t('access.appMode')} />
             </Grid>
           </Grid>
         </Box>

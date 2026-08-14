@@ -65,7 +65,7 @@ description: 通过 REST API 查询 Talk-mirror 调试器的连接、会话、�
 - **触发词**：魔镜魔镜告诉我，怎么用 Go（或 Python/JavaScript/Shell/C++）接入？
 - **意图**：可直接复制的客户端示例。
 - **动作**：`GET /api/code/{lang}`，其中 `lang` ∈ `javascript|python|go|shell|c++`
-- **回复**：`app`（完整示例）与 `fn`（可复用函数）。
+- **回复**：`class`（带 `talk()` 方法的客户端类）与 `app`（调用示例）。
 
 ## 响应结构
 

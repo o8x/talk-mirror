@@ -9,6 +9,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Sessions from './pages/Sessions'
 import Connections from './pages/Connections'
+import Test from './pages/Test'
 import Settings from './pages/Settings'
 
 const Access = lazy(() => import('./pages/Access'))
@@ -47,14 +48,13 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="connections" element={<Connections />} />
-            <Route
-              path="access"
-              element={
+            <Route path="access" element={
                 <Suspense fallback={null}>
                   <Access />
                 </Suspense>
               }
             />
+            <Route path="test" element={<Test />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

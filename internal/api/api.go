@@ -35,6 +35,7 @@ func New(mgr *session.Manager, buf *buffer.Buffer, db *sqlite.Store, gate *state
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/stats", h.stats)
 	mux.HandleFunc("GET /api/stats/overview", h.overview)
 	mux.HandleFunc("GET /api/connections", h.listConnections)
 	mux.HandleFunc("GET /api/connections/{id}", h.connectionDetail)
@@ -59,6 +60,18 @@ func writeErr(w http.ResponseWriter, status int, msg string) {
 }
 
 // --- stats ---
+
+// stats returns a compact summary of the system's current state.
+func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
+	conns, sess := h.mgr.ActiveCounts()
+	writeJSON(w, http.StatusOK, map[string]any{
+		"total_messages":     h.buf.Total(),
+		"connections":        len(h.mgr.Clients()),
+		"sessions":           len(h.mgr.Sessions("")),
+		"active_connections": conns,
+		"active_sessions":    sess,
+	})
+}
 
 type overviewResponse struct {
 	TotalMessages     int64         `json:"total_messages"`

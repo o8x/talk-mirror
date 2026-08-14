@@ -4,6 +4,7 @@ export const en = {
   'menu.connections': 'Connections',
   'menu.access': 'Access',
   'menu.settings': 'Settings',
+  'menu.test': 'Test',
 
   'common.copy': 'Copy',
   'common.copied': 'Copied to clipboard',
@@ -63,8 +64,22 @@ export const en = {
 
   'access.description':
     'Copy a ready-to-run client snippet. All examples use only the language standard library and push frames in the format |2-byte length|json| to the data port (default 3000).',
-  'access.appMode': 'Application mode',
-  'access.fnMode': 'Function mode',
+  'access.classMode': 'Class',
+  'access.appMode': 'Application',
+
+  'test.server': 'Server address',
+  'test.apiPort': 'API port',
+  'test.talkPort': 'Talk port',
+  'test.message': 'Message',
+  'test.data': 'Data',
+  'test.key': 'Key',
+  'test.value': 'Value',
+  'test.addField': 'Add field',
+  'test.run': 'Test',
+  'test.success': 'Sent successfully',
+  'test.failed': 'Send failed',
+  'test.duration': 'Duration',
+  'test.hint': 'Sends a message to the server via the HTTP ingest endpoint (API port). The talk port is where raw TCP/UDP clients connect.',
 
   'settings.network': 'Network',
   'settings.webAddress': 'Web address',

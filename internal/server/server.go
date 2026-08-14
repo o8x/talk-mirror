@@ -40,7 +40,7 @@ func (s *Server) buildHandler() http.Handler {
 	}
 	fileServer := http.FileServer(http.FS(dist))
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/ws" {
 			mux.ServeHTTP(w, r)
 			return
@@ -56,6 +56,23 @@ func (s *Server) buildHandler() http.Handler {
 		}
 		// SPA fallback to index.html for client-side routes.
 		http.ServeFileFS(w, r, dist, "index.html")
+	})
+
+	return withCORS(handler)
+}
+
+// withCORS allows cross-origin requests (for the embedded UI, external tools
+// and the built-in test page).
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

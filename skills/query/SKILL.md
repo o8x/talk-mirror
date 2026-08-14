@@ -66,7 +66,7 @@ self-signed certificate. No request body.
 - **Trigger**: 魔镜魔镜告诉我，怎么用 Go（或 Python/JavaScript/Shell/C++）接入？
 - **Intent**: a ready-to-copy client snippet.
 - **Action**: `GET /api/code/{lang}` where `lang` ∈ `javascript|python|go|shell|c++`
-- **Reply**: `app` (full example) and `fn` (reusable function).
+- **Reply**: `class` (client class with a `talk()` method) and `app` (usage example).
 
 ## Response shapes
 

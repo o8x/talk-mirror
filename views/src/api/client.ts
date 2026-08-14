@@ -68,6 +68,17 @@ export function setPause(paused: boolean): Promise<{ paused: boolean }> {
   })
 }
 
-export function getCode(lang: string): Promise<{ lang: string; app: string; fn: string }> {
-  return request<{ lang: string; app: string; fn: string }>(`/api/code/${lang}`)
+export function getCode(lang: string): Promise<{ lang: string; class: string; app: string }> {
+  return request<{ lang: string; class: string; app: string }>(`/api/code/${lang}`)
+}
+
+export function sendTestMessage(
+  baseUrl: string,
+  body: { message: string; data?: Record<string, string> },
+): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(`${baseUrl}/api/ingest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 }

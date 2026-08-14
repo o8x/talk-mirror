@@ -6,6 +6,7 @@ export const zh: Dict = {
   'menu.connections': '连接',
   'menu.access': '接入',
   'menu.settings': '设置',
+  'menu.test': '测试',
 
   'common.copy': '复制',
   'common.copied': '已复制到剪贴板',
@@ -65,8 +66,22 @@ export const zh: Dict = {
 
   'access.description':
     '复制可直接运行的客户端代码。所有示例仅使用各语言标准库，以 |2字节长度|json| 的帧格式推送到数据端口（默认 3000）。',
-  'access.appMode': '应用模式',
-  'access.fnMode': '函数模式',
+  'access.classMode': '类',
+  'access.appMode': '应用',
+
+  'test.server': '服务器地址',
+  'test.apiPort': 'API 端口',
+  'test.talkPort': 'Talk 端口',
+  'test.message': '消息内容',
+  'test.data': '数据',
+  'test.key': '键',
+  'test.value': '值',
+  'test.addField': '添加字段',
+  'test.run': '测试',
+  'test.success': '发送成功',
+  'test.failed': '发送失败',
+  'test.duration': '耗时',
+  'test.hint': '通过 HTTP 摄入端点（API 端口）向服务器发送一条消息；talk 端口是原始 TCP/UDP 客户端连接的端口。',
 
   'settings.network': '网络',
   'settings.webAddress': 'Web 监听地址',

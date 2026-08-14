@@ -23,6 +23,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt'
 import LanIcon from '@mui/icons-material/Lan'
 import CodeIcon from '@mui/icons-material/Code'
 import SettingsIcon from '@mui/icons-material/Settings'
+import ScienceIcon from '@mui/icons-material/Science'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import PauseCircleIcon from '@mui/icons-material/PauseCircle'
@@ -54,6 +55,7 @@ export default function Layout() {
     { path: '/sessions', label: t('menu.sessions'), icon: <ListAltIcon /> },
     { path: '/connections', label: t('menu.connections'), icon: <LanIcon /> },
     { path: '/access', label: t('menu.access'), icon: <CodeIcon /> },
+    { path: '/test', label: t('menu.test'), icon: <ScienceIcon /> },
     { path: '/settings', label: t('menu.settings'), icon: <SettingsIcon /> },
   ]
 
