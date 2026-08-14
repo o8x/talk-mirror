@@ -90,6 +90,15 @@ func (s *Store) ClientByIP(ip string) (*model.Client, error) {
 	return &c, nil
 }
 
+func (s *Store) ClientByID(id string) (*model.Client, error) {
+	row := s.db.QueryRow(`SELECT id, ip, first_seen, last_seen, status, message_count FROM clients WHERE id = ?`, id)
+	var c model.Client
+	if err := row.Scan(&c.ID, &c.IP, &c.FirstSeen, &c.LastSeen, &c.Status, &c.MessageCount); err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
 func (s *Store) ListClients() ([]model.Client, error) {
 	rows, err := s.db.Query(`SELECT id, ip, first_seen, last_seen, status, message_count FROM clients ORDER BY last_seen DESC`)
 	if err != nil {

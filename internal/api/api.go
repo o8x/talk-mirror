@@ -207,16 +207,24 @@ type connectionDTO struct {
 }
 
 func (h *Handler) listConnections(w http.ResponseWriter, r *http.Request) {
-	clients := h.mgr.Clients()
-	sessions := h.mgr.Sessions("")
+	persisted, _ := h.db.ListClients()
+	live := h.mgr.Clients()
+	liveByIP := make(map[string]model.Client, len(live))
+	for _, c := range live {
+		liveByIP[c.IP] = c
+	}
 
+	sessions := h.mergedSessions("")
 	sessByClient := map[string][]model.Session{}
 	for _, s := range sessions {
 		sessByClient[s.ClientID] = append(sessByClient[s.ClientID], s)
 	}
 
-	out := make([]connectionDTO, 0, len(clients))
-	for _, c := range clients {
+	out := make([]connectionDTO, 0, len(persisted))
+	for _, c := range persisted {
+		if lc, ok := liveByIP[c.IP]; ok {
+			c = lc
+		}
 		list := sessByClient[c.ID]
 		active := 0
 		for _, s := range list {
@@ -234,10 +242,15 @@ func (h *Handler) connectionDetail(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	c := h.mgr.ClientByID(id)
 	if c == nil {
+		if pc, err := h.db.ClientByID(id); err == nil && pc != nil {
+			c = pc
+		}
+	}
+	if c == nil {
 		writeErr(w, http.StatusNotFound, "connection not found")
 		return
 	}
-	sessions := h.mgr.Sessions(id)
+	sessions := h.mergedSessions(id)
 	active := 0
 	for _, s := range sessions {
 		if s.Status == model.StatusActive {
@@ -253,14 +266,33 @@ func (h *Handler) connectionDetail(w http.ResponseWriter, r *http.Request) {
 
 // --- sessions ---
 
+// mergedSessions combines persisted sessions with live in-memory state so that
+// historical sessions remain visible even when no clients are connected.
+func (h *Handler) mergedSessions(clientID string) []model.Session {
+	persisted, _ := h.db.ListSessions(clientID)
+	live := h.mgr.Sessions(clientID)
+	liveByID := make(map[string]model.Session, len(live))
+	for _, s := range live {
+		liveByID[s.ID] = s
+	}
+	out := make([]model.Session, 0, len(persisted))
+	for _, s := range persisted {
+		if ls, ok := liveByID[s.ID]; ok {
+			s = ls
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
 func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 	clientID := r.URL.Query().Get("client_id")
 	start, _ := strconv.ParseInt(r.URL.Query().Get("start"), 10, 64)
 	end, _ := strconv.ParseInt(r.URL.Query().Get("end"), 10, 64)
 
-	live := h.mgr.Sessions(clientID)
-	out := make([]model.Session, 0, len(live))
-	for _, s := range live {
+	sessions := h.mergedSessions(clientID)
+	out := make([]model.Session, 0, len(sessions))
+	for _, s := range sessions {
 		if start > 0 && s.LastActiveAt < start {
 			continue
 		}
@@ -283,6 +315,11 @@ type messagesResponse struct {
 func (h *Handler) sessionMessages(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	sess := h.mgr.SessionByID(id)
+	if sess == nil {
+		if ps, err := h.db.SessionByID(id); err == nil && ps != nil {
+			sess = ps
+		}
+	}
 	if sess == nil {
 		writeErr(w, http.StatusNotFound, "session not found")
 		return
@@ -337,8 +374,10 @@ func (h *Handler) sessionMessages(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) sessionBuckets(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if h.mgr.SessionByID(id) == nil {
-		writeErr(w, http.StatusNotFound, "session not found")
-		return
+		if ps, err := h.db.SessionByID(id); err != nil || ps == nil {
+			writeErr(w, http.StatusNotFound, "session not found")
+			return
+		}
 	}
 	q := r.URL.Query()
 	now := time.Now().UnixNano()

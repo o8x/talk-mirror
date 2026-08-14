@@ -126,9 +126,11 @@ export default function Sessions() {
   useEffect(() => {
     refreshSessions().then((ss) => {
       if (ss.length === 0) return
-      const recent = ss[0]
-      setSelConn(recent.client_id)
-      setSelSession(recent.id)
+      // Prefer the most recent active session; otherwise select the newest one.
+      const active = ss.find((s) => s.status === 'active')
+      const target = active ?? ss[0]
+      setSelConn(target.client_id)
+      setSelSession(target.id)
     })
   }, [refreshSessions])
 
