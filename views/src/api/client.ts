@@ -52,6 +52,14 @@ export function getSessions(clientId?: string): Promise<Session[]> {
   return request<Session[]>(`/api/sessions${q}`)
 }
 
+export function deleteConnection(id: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(`/api/connections/${id}`, { method: 'DELETE' })
+}
+
+export function deleteSession(id: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(`/api/sessions/${id}`, { method: 'DELETE' })
+}
+
 export function getMessages(
   sessionId: string,
   opts: { start?: number; end?: number; limit?: number; offset?: number } = {},

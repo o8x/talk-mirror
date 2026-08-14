@@ -184,6 +184,21 @@ func (s *Store) MarkSessionClosed(id string, now int64) error {
 	return err
 }
 
+func (s *Store) DeleteSession(id string) error {
+	_, err := s.db.Exec(`DELETE FROM sessions WHERE id = ?`, id)
+	return err
+}
+
+func (s *Store) DeleteSessionsByClient(clientID string) error {
+	_, err := s.db.Exec(`DELETE FROM sessions WHERE client_id = ?`, clientID)
+	return err
+}
+
+func (s *Store) DeleteClient(id string) error {
+	_, err := s.db.Exec(`DELETE FROM clients WHERE id = ?`, id)
+	return err
+}
+
 // AddCounts increments message counters and refreshes activity timestamps.
 func (s *Store) AddCounts(clientID, sessionID string, delta, lastActiveAt int64) error {
 	if sessionID != "" {

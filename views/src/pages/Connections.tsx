@@ -17,9 +17,10 @@ import {
   Typography,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import DeleteIcon from '@mui/icons-material/Delete'
 import StatCard from '../components/StatCard'
 import TrendChart from '../components/TrendChart'
-import { getConnections, getOverview, getSessions } from '../api/client'
+import { deleteConnection, deleteSession, getConnections, getOverview, getSessions } from '../api/client'
 import { ws } from '../api/ws'
 import { formatCount, formatTime } from '../utils'
 import { useT } from '../i18n'
@@ -67,6 +68,34 @@ export default function Connections() {
     }
   }, [])
 
+  const handleDeleteConnection = useCallback(
+    async (c: Connection) => {
+      if (!window.confirm(t('connections.deleteConnectionConfirm'))) return
+      try {
+        await deleteConnection(c.id)
+        setDetail(null)
+        refresh()
+      } catch {
+        /* ignore */
+      }
+    },
+    [refresh, t],
+  )
+
+  const handleDeleteSession = useCallback(
+    async (s: Session) => {
+      if (!window.confirm(t('connections.deleteSessionConfirm'))) return
+      try {
+        await deleteSession(s.id)
+        setDetailSessions((prev) => prev.filter((x) => x.id !== s.id))
+        refresh()
+      } catch {
+        /* ignore */
+      }
+    },
+    [refresh, t],
+  )
+
   const activeSessions = useMemo(
     () => connections.reduce((n, c) => n + c.active_sessions, 0),
     [connections],
@@ -112,6 +141,7 @@ export default function Connections() {
                 <TableCell>{t('connections.sessions')}</TableCell>
                 <TableCell>{t('common.active')}</TableCell>
                 <TableCell>{t('connections.lastSeen')}</TableCell>
+                <TableCell align="right" />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -145,11 +175,23 @@ export default function Connections() {
                   <TableCell>{c.session_count}</TableCell>
                   <TableCell>{c.active_sessions}</TableCell>
                   <TableCell sx={{ color: 'text.secondary' }}>{formatTime(c.last_seen)}</TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      title={t('connections.delete')}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteConnection(c)
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               ))}
               {connections.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary', py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ color: 'text.secondary', py: 4 }}>
                     {t('connections.noConnections')}
                   </TableCell>
                 </TableRow>
@@ -180,6 +222,7 @@ export default function Connections() {
                 <TableCell>{t('common.status')}</TableCell>
                 <TableCell>{t('connections.messages')}</TableCell>
                 <TableCell>{t('connections.lastActive')}</TableCell>
+                <TableCell align="right" />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -196,11 +239,20 @@ export default function Connections() {
                   </TableCell>
                   <TableCell>{formatCount(s.message_count)}</TableCell>
                   <TableCell sx={{ color: 'text.secondary' }}>{formatTime(s.last_active_at)}</TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      title={t('connections.delete')}
+                      onClick={() => handleDeleteSession(s)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               ))}
               {detailSessions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ color: 'text.secondary' }}>
+                  <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary' }}>
                     {t('connections.noSessions')}
                   </TableCell>
                 </TableRow>

@@ -133,6 +133,24 @@ func (s *Store) SessionBuckets(sessionID string, start, end int64, bucketSize in
 	return buckets, iter.Error()
 }
 
+// DeleteSession removes all archived records of a session (both the session
+// index and the global time index).
+func (s *Store) DeleteSession(sessionID string) error {
+	prefix := sessionPrefix(sessionID)
+	iter := s.db.NewIterator(util.BytesPrefix(prefix), nil)
+	batch := new(leveldb.Batch)
+	for iter.Next() {
+		_, ts, seq := decodeSessionKey(iter.Key())
+		batch.Delete(iter.Key())
+		batch.Delete(globalKey(ts, seq))
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return err
+	}
+	return s.db.Write(batch, nil)
+}
+
 // --- key encoding ---
 
 var (

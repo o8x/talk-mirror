@@ -195,6 +195,46 @@ func (m *Manager) broadcastSession(id string) {
 	m.hub.Broadcast("session", snap)
 }
 
+// RemoveSession drops a session from the in-memory registry.
+func (m *Manager) RemoveSession(id string) {
+	m.mu.Lock()
+	ss, ok := m.sessions[id]
+	if !ok {
+		m.mu.Unlock()
+		return
+	}
+	delete(m.keyIndex, keyOf(ss.IP, ss.Port, ss.Protocol))
+	delete(m.sessions, id)
+	if cs, ok := m.clients[ss.IP]; ok {
+		delete(cs.sessions, id)
+	}
+	m.mu.Unlock()
+}
+
+// RemoveClient drops a client and all of its sessions from the in-memory
+// registry, returning the removed session IDs.
+func (m *Manager) RemoveClient(id string) []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var removed []string
+	for ip, cs := range m.clients {
+		if cs.ID != id {
+			continue
+		}
+		for sid := range cs.sessions {
+			if ss, ok := m.sessions[sid]; ok {
+				delete(m.keyIndex, keyOf(ss.IP, ss.Port, ss.Protocol))
+			}
+			delete(m.sessions, sid)
+			removed = append(removed, sid)
+		}
+		delete(m.clientIDs, ip)
+		delete(m.clients, ip)
+		break
+	}
+	return removed
+}
+
 // Clients returns a live snapshot of all clients.
 func (m *Manager) Clients() []model.Client {
 	m.mu.Lock()

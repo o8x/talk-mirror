@@ -35,7 +35,7 @@ import { setPause, saveSettings } from '../api/client'
 import { LANGS, useLang, useT } from '../i18n'
 import logoUrl from '../assets/logo.svg'
 
-const DRAWER_WIDTH = 220
+const DRAWER_WIDTH = 320
 
 export default function Layout() {
   const theme = useTheme()

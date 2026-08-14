@@ -153,6 +153,20 @@ func (b *Buffer) SessionBuckets(sessionID string, start, end, bucketSize int64) 
 	return buckets, nil
 }
 
+// DeleteSession removes a session's pending and archived records.
+func (b *Buffer) DeleteSession(sessionID string) error {
+	b.mu.Lock()
+	kept := b.pending[:0]
+	for _, r := range b.pending {
+		if r.SessionID != sessionID {
+			kept = append(kept, r)
+		}
+	}
+	b.pending = kept
+	b.mu.Unlock()
+	return b.db.DeleteSession(sessionID)
+}
+
 func filterPending(pending []model.Record, sessionID string, start, end int64) []model.Record {
 	var out []model.Record
 	for _, r := range pending {

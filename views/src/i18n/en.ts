@@ -62,6 +62,9 @@ export const en = {
   'connections.noConnections': 'No connections yet.',
   'connections.noSessions': 'No sessions for this connection.',
   'connections.dialogTitle': 'Connection {ip}',
+  'connections.delete': 'Delete',
+  'connections.deleteConnectionConfirm': 'Delete this connection and all of its sessions and messages?',
+  'connections.deleteSessionConfirm': 'Delete this session and all of its messages?',
 
   'access.description':
     'Copy a ready-to-run client snippet. All examples use only the language standard library and push frames in the format |2-byte length|json| to the data port (default 3000).',

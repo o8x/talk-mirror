@@ -41,9 +41,11 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/stats/overview", h.overview)
 	mux.HandleFunc("GET /api/connections", h.listConnections)
 	mux.HandleFunc("GET /api/connections/{id}", h.connectionDetail)
+	mux.HandleFunc("DELETE /api/connections/{id}", h.deleteConnection)
 	mux.HandleFunc("GET /api/sessions", h.listSessions)
 	mux.HandleFunc("GET /api/sessions/{id}/messages", h.sessionMessages)
 	mux.HandleFunc("GET /api/sessions/{id}/buckets", h.sessionBuckets)
+	mux.HandleFunc("DELETE /api/sessions/{id}", h.deleteSession)
 	mux.HandleFunc("GET /api/settings", h.getSettings)
 	mux.HandleFunc("POST /api/settings", h.saveSettings)
 	mux.HandleFunc("POST /api/pause", h.pause)
@@ -309,6 +311,40 @@ func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].LastActiveAt > out[j].LastActiveAt })
 	writeJSON(w, http.StatusOK, out)
+}
+
+// deleteSession removes a session and all of its message records.
+func (h *Handler) deleteSession(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	sess, err := h.db.SessionByID(id)
+	if err != nil || sess == nil {
+		writeErr(w, http.StatusNotFound, "session not found")
+		return
+	}
+	_ = h.buf.DeleteSession(id)
+	_ = h.db.DeleteSession(id)
+	h.mgr.RemoveSession(id)
+	h.log.Info("session deleted", "id", id, "ip", sess.IP, "port", sess.Port)
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+// deleteConnection removes a connection, all of its sessions and their messages.
+func (h *Handler) deleteConnection(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	client, err := h.db.ClientByID(id)
+	if err != nil || client == nil {
+		writeErr(w, http.StatusNotFound, "connection not found")
+		return
+	}
+	sessions, _ := h.db.ListSessions(id)
+	for _, sess := range sessions {
+		_ = h.buf.DeleteSession(sess.ID)
+		_ = h.db.DeleteSession(sess.ID)
+	}
+	_ = h.db.DeleteClient(id)
+	h.mgr.RemoveClient(id)
+	h.log.Info("connection deleted", "id", id, "ip", client.IP, "sessions", len(sessions))
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 // --- messages ---

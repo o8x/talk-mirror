@@ -64,6 +64,9 @@ export const zh: Dict = {
   'connections.noConnections': '暂无连接。',
   'connections.noSessions': '该连接下暂无会话。',
   'connections.dialogTitle': '连接 {ip}',
+  'connections.delete': '删除',
+  'connections.deleteConnectionConfirm': '删除该连接及其所有会话和消息？',
+  'connections.deleteSessionConfirm': '删除该会话及其所有消息？',
 
   'access.description':
     '复制可直接运行的客户端代码。所有示例仅使用各语言标准库，以 |2字节长度|json| 的帧格式推送到数据端口（默认 3000）。',
