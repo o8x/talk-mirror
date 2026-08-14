@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"log/slog"
+	"net"
 	"net/http"
 	"sort"
 	"strconv"
@@ -42,6 +43,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/settings", h.saveSettings)
 	mux.HandleFunc("POST /api/pause", h.pause)
 	mux.HandleFunc("GET /api/code/{lang}", h.code)
+	mux.HandleFunc("POST /api/ingest", h.ingest)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -296,4 +298,29 @@ func (h *Handler) pause(w http.ResponseWriter, r *http.Request) {
 	h.hub.Broadcast("paused", map[string]bool{"paused": body.Paused})
 	h.log.Info("system pause toggled", "paused", body.Paused)
 	writeJSON(w, http.StatusOK, map[string]bool{"paused": body.Paused})
+}
+
+// ingest writes a debug log message over HTTP. It routes into the same
+// session/archive pipeline as the TCP/UDP listeners, keyed by the caller's IP
+// with the "http" protocol.
+func (h *Handler) ingest(w http.ResponseWriter, r *http.Request) {
+	if h.gate.Paused() {
+		writeErr(w, http.StatusServiceUnavailable, "system is paused")
+		return
+	}
+	var in model.Incoming
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+	if in.Data == nil {
+		in.Data = json.RawMessage("{}")
+	}
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		ip = r.RemoteAddr
+	}
+	h.mgr.Handle(ip, 0, "http", in)
+	h.log.Info("http log ingested", "ip", ip, "message", in.Message)
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

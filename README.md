@@ -32,6 +32,8 @@
 - **Kibana-like session view** with a live trend chart, brush-to-filter time ranges, expandable JSON rows and client-side pagination.
 - **Access snippets** — ready-to-run stdlib-only clients for JavaScript, Python, Go, Shell and C++.
 - **Pause** the whole system from the UI without stopping the process.
+- **HTTP ingest** — write log messages via `POST /api/ingest`, so AI agents (with
+  only an HTTP tool) can push logs; see the [skills](skills) directory.
 
 ## Quick start
 
@@ -221,6 +223,7 @@ The LevelDB directory and SQLite file locations are shown read-only (they live u
 │   ├── linux/              # systemd unit + nfpm (deb/rpm) + .run builder
 │   ├── macos/              # launchd plist + pkgbuilder script
 │   └── windows/            # NSIS installer script
+├── skills/                 # bilingual AI agent skills (query + log writing)
 └── views/                  # React + MUI + ECharts frontend (pnpm)
 ```
 
@@ -242,6 +245,13 @@ make build
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the
 development workflow, [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community
 guidelines, and [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
+
+## AI skills
+
+The [skills](skills) directory contains bilingual (English / 中文) `SKILL.md`
+files that teach an AI agent — equipped with an `https_request` tool — how to
+query and write logs to Talk-mirror. Trigger phrases use the "魔镜魔镜告诉我"
+(Magic mirror, magic mirror, tell me) persona.
 
 ## License
 
