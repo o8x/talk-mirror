@@ -1,0 +1,58 @@
+import type { Connection, MessagesResponse, Overview, Session } from '../types'
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, init)
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+  return res.json() as Promise<T>
+}
+
+export function getOverview(seconds: number): Promise<Overview> {
+  return request<Overview>(`/api/stats/overview?seconds=${seconds}`)
+}
+
+export function getConnections(): Promise<Connection[]> {
+  return request<Connection[]>('/api/connections')
+}
+
+export function getSessions(clientId?: string): Promise<Session[]> {
+  const q = clientId ? `?client_id=${encodeURIComponent(clientId)}` : ''
+  return request<Session[]>(`/api/sessions${q}`)
+}
+
+export function getMessages(
+  sessionId: string,
+  opts: { start?: number; end?: number; limit?: number; offset?: number } = {},
+): Promise<MessagesResponse> {
+  const p = new URLSearchParams()
+  if (opts.start) p.set('start', String(opts.start))
+  if (opts.end) p.set('end', String(opts.end))
+  p.set('limit', String(opts.limit ?? 100))
+  p.set('offset', String(opts.offset ?? 0))
+  return request<MessagesResponse>(`/api/sessions/${sessionId}/messages?${p.toString()}`)
+}
+
+export function getSettings(): Promise<Record<string, string>> {
+  return request<Record<string, string>>('/api/settings')
+}
+
+export function saveSettings(body: Record<string, string>): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function setPause(paused: boolean): Promise<{ paused: boolean }> {
+  return request<{ paused: boolean }>('/api/pause', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paused }),
+  })
+}
+
+export function getCode(lang: string): Promise<{ lang: string; code: string }> {
+  return request<{ lang: string; code: string }>(`/api/code/${lang}`)
+}
