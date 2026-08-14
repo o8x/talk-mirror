@@ -252,7 +252,11 @@ jobs:
         shell: powershell
         run: |
           $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
-          & $nsis /DVERSION=$env:VERSION /DARCH=${{ matrix.arch }} packaging\windows\talk-mirror.nsi
+          Copy-Item -Path talk-mirror.exe -Destination packaging\windows\talk-mirror.exe -Force
+          Push-Location packaging\windows
+          & $nsis /DVERSION=$env:VERSION /DARCH=${{ matrix.arch }} talk-mirror.nsi
+          Pop-Location
+          Move-Item -Path packaging\windows\talk-mirror-*-setup.exe -Destination . -Force
 
       - uses: actions/upload-artifact@v4
         with:
