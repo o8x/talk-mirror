@@ -5,6 +5,7 @@ const DEFAULT_RED = '#c62828'
 
 const LANG_KEY = 'talk-mirror-lang'
 const KEY_KEY = 'talk-mirror-key'
+const LOCAL_IP_KEY = 'talk-mirror-local-ip'
 
 interface Settings {
   [key: string]: string
@@ -17,6 +18,7 @@ interface AppState {
   wsConnected: boolean
   lang: string
   key: string
+  localIp: string
   settings: Settings
   setDarkMode: (v: boolean) => void
   toggleDark: () => void
@@ -26,6 +28,7 @@ interface AppState {
   setLang: (v: string) => void
   setKey: (v: string) => void
   clearKey: () => void
+  setLocalIp: (v: string) => void
   setSettings: (s: Settings) => void
 }
 
@@ -36,6 +39,7 @@ export const useStore = create<AppState>((set) => ({
   wsConnected: false,
   lang: localStorage.getItem(LANG_KEY) ?? 'en',
   key: localStorage.getItem(KEY_KEY) ?? '',
+  localIp: localStorage.getItem(LOCAL_IP_KEY) ?? '',
   settings: {},
   setDarkMode: (v) => set({ darkMode: v }),
   toggleDark: () =>
@@ -60,6 +64,10 @@ export const useStore = create<AppState>((set) => ({
   clearKey: () => {
     localStorage.removeItem(KEY_KEY)
     set({ key: '' })
+  },
+  setLocalIp: (v) => {
+    localStorage.setItem(LOCAL_IP_KEY, v)
+    set({ localIp: v })
   },
   setSettings: (s) => set({ settings: s }),
 }))

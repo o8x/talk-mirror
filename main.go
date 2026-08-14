@@ -159,5 +159,6 @@ func runApp(ctx context.Context, cfg *config.Config) error {
 	<-ctx.Done()
 	log.Info("shutting down")
 	buf.Flush()
+	mgr.SyncCounts()
 	return srv.Close()
 }

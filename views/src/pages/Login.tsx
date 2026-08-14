@@ -7,6 +7,7 @@ import logoUrl from '../assets/logo.svg'
 
 export default function Login() {
   const setKey = useStore((s) => s.setKey)
+  const setLocalIp = useStore((s) => s.setLocalIp)
   const [value, setValue] = useState('')
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -15,8 +16,9 @@ export default function Login() {
     setLoading(true)
     setError(false)
     try {
-      await login(value.trim())
+      const res = await login(value.trim())
       setKey(value.trim())
+      if (res.ip) setLocalIp(res.ip)
     } catch {
       setError(true)
     } finally {

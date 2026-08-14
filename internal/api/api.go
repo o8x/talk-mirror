@@ -110,7 +110,11 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusUnauthorized, "invalid key")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		ip = r.RemoteAddr
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ip": ip})
 }
 
 // --- stats ---
@@ -185,15 +189,17 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conns, sess := h.mgr.ActiveCounts()
-	totalSessions := len(h.mgr.Sessions(""))
+	totalMessages, _ := h.db.TotalMessages()
+	totalClients, _ := h.db.ListClients()
+	totalSessionsList, _ := h.db.ListSessions("")
 
 	writeJSON(w, http.StatusOK, overviewResponse{
-		TotalMessages:     h.buf.Total(),
+		TotalMessages:     totalMessages,
 		QPS:               qps,
 		ActiveConnections: conns,
 		ActiveSessions:    sess,
-		TotalConnections:  len(h.mgr.Clients()),
-		TotalSessions:     totalSessions,
+		TotalConnections:  len(totalClients),
+		TotalSessions:     len(totalSessionsList),
 		Buckets:           points,
 	})
 }

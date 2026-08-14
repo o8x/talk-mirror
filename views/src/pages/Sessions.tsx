@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Box,
   Card,
@@ -83,6 +84,8 @@ function JsonBlock({ value }: { value: unknown }) {
 
 export default function Sessions() {
   const t = useT()
+  const localIp = useStore((s) => s.localIp)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [connections, setConnections] = useState<Connection[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [selConn, setSelConn] = useState('')
@@ -126,13 +129,30 @@ export default function Sessions() {
   useEffect(() => {
     refreshSessions().then((ss) => {
       if (ss.length === 0) return
-      // Prefer the most recent active session; otherwise select the newest one.
-      const active = ss.find((s) => s.status === 'active')
-      const target = active ?? ss[0]
-      setSelConn(target.client_id)
+      const urlSession = searchParams.get('session')
+      const urlConn = searchParams.get('connection')
+      let target: Session | undefined
+      if (urlSession) {
+        target = ss.find((s) => s.id === urlSession)
+      }
+      if (!target) {
+        // Prefer the most recent active session; otherwise select the newest one.
+        const active = ss.find((s) => s.status === 'active')
+        target = active ?? ss[0]
+      }
+      const conn = urlConn && ss.find((s) => s.client_id === urlConn) ? urlConn : target.client_id
+      setSelConn(conn)
       setSelSession(target.id)
     })
   }, [refreshSessions])
+
+  // keep the URL in sync with the current selection
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (selConn) params.set('connection', selConn)
+    if (selSession) params.set('session', selSession)
+    setSearchParams(params, { replace: true })
+  }, [selConn, selSession, setSearchParams])
 
   useEffect(() => {
     const off = ws.on((ev) => {
@@ -308,6 +328,15 @@ export default function Sessions() {
             {connections.map((c) => (
               <MenuItem key={c.id} value={c.id}>
                 {c.ip}
+                {localIp && c.ip === localIp && (
+                  <Chip
+                    label={t('common.localMachine')}
+                    size="small"
+                    color="primary"
+                    variant="filled"
+                    sx={{ ml: 1, height: 18 }}
+                  />
+                )}
               </MenuItem>
             ))}
           </Select>

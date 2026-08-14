@@ -23,10 +23,12 @@ import { getConnections, getOverview, getSessions } from '../api/client'
 import { ws } from '../api/ws'
 import { formatCount, formatTime } from '../utils'
 import { useT } from '../i18n'
+import { useStore } from '../store/store'
 import type { Connection, Overview, Session } from '../types'
 
 export default function Connections() {
   const t = useT()
+  const localIp = useStore((s) => s.localIp)
   const [connections, setConnections] = useState<Connection[]>([])
   const [overview, setOverview] = useState<Overview | null>(null)
   const [detail, setDetail] = useState<Connection | null>(null)
@@ -120,7 +122,18 @@ export default function Connections() {
                   sx={{ cursor: 'pointer' }}
                   onClick={() => openDetail(c)}
                 >
-                  <TableCell sx={{ fontFamily: 'monospace' }}>{c.ip}</TableCell>
+                  <TableCell sx={{ fontFamily: 'monospace' }}>
+                    {c.ip}
+                    {localIp && c.ip === localIp && (
+                      <Chip
+                        label={t('common.localMachine')}
+                        size="small"
+                        color="primary"
+                        variant="filled"
+                        sx={{ ml: 1, height: 18 }}
+                      />
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Chip
                       label={c.status === 'active' ? t('common.active') : t('common.closed')}

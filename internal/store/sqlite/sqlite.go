@@ -172,6 +172,13 @@ func (s *Store) ListSessions(clientID string) ([]model.Session, error) {
 	return out, rows.Err()
 }
 
+// TotalMessages returns the cumulative message count across all sessions.
+func (s *Store) TotalMessages() (int64, error) {
+	var n int64
+	err := s.db.QueryRow(`SELECT COALESCE(SUM(message_count), 0) FROM sessions`).Scan(&n)
+	return n, err
+}
+
 func (s *Store) MarkSessionClosed(id string, now int64) error {
 	_, err := s.db.Exec(`UPDATE sessions SET last_active_at = ?, status = 'closed' WHERE id = ?`, now, id)
 	return err

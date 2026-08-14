@@ -22,6 +22,7 @@ export const en = {
   'common.apply': 'Apply',
   'common.start': 'Start',
   'common.end': 'End',
+  'common.localMachine': 'Local',
 
   'pause.banner': 'The system is paused and not receiving any data.',
 

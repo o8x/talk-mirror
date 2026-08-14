@@ -260,7 +260,7 @@ func (m *Manager) ActiveCounts() (int, int) {
 	return conns, sess
 }
 
-func (m *Manager) syncCounts() {
+func (m *Manager) SyncCounts() {
 	m.mu.Lock()
 	for _, cs := range m.clients {
 		if cs.MessageCount != cs.syncedCount {
@@ -302,10 +302,10 @@ func (m *Manager) Run(done <-chan struct{}) {
 	for {
 		select {
 		case <-done:
-			m.syncCounts()
+			m.SyncCounts()
 			return
 		case <-countT.C:
-			m.syncCounts()
+			m.SyncCounts()
 		case <-sweepT.C:
 			m.sweepIdle()
 		}

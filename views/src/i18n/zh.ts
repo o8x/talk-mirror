@@ -24,6 +24,7 @@ export const zh: Dict = {
   'common.apply': '应用',
   'common.start': '开始',
   'common.end': '结束',
+  'common.localMachine': '本机',
 
   'pause.banner': '系统已暂停，当前不接收任何数据。',
 

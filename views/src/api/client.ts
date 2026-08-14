@@ -27,8 +27,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export function login(key: string): Promise<{ ok: boolean }> {
-  return request<{ ok: boolean }>('/api/login', {
+export function login(key: string): Promise<{ ok: boolean; ip: string }> {
+  return request<{ ok: boolean; ip: string }>('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({ key }),
