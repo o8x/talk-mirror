@@ -29,7 +29,6 @@ interface Field {
 
 interface FormState {
   address: string
-  apiPort: string
   talkPort: string
   key: string
   message: string
@@ -132,7 +131,6 @@ export default function Test() {
   const darkMode = useStore((s) => s.darkMode)
   const saved = loadForm()
   const [address, setAddress] = useState(() => saved.address ?? window.location.hostname ?? '127.0.0.1')
-  const [apiPort, setApiPort] = useState(() => saved.apiPort ?? window.location.port ?? '443')
   const [talkPort, setTalkPort] = useState(() => saved.talkPort ?? '3000')
   const [key, setKey] = useState(() => saved.key ?? getStoredKey())
   const [message, setMessage] = useState(() => saved.message ?? 'hello')
@@ -144,8 +142,8 @@ export default function Test() {
   const [lang, setLang] = useState<'go' | 'python'>('go')
 
   useEffect(() => {
-    localStorage.setItem(FORM_KEY, JSON.stringify({ address, apiPort, talkPort, key, message, fields }))
-  }, [address, apiPort, talkPort, key, message, fields])
+    localStorage.setItem(FORM_KEY, JSON.stringify({ address, talkPort, key, message, fields }))
+  }, [address, talkPort, key, message, fields])
 
   const setField = (i: number, k: 'key' | 'value', v: string) => {
     setFields((prev) => prev.map((f, idx) => (idx === i ? { ...f, [k]: v } : f)))
@@ -173,7 +171,8 @@ export default function Test() {
   const run = async () => {
     setRunning(true)
     setResult(null)
-    const baseUrl = `https://${address.trim()}:${apiPort.trim()}`
+    const apiPort = window.location.port || '443'
+    const baseUrl = `https://${address.trim()}:${apiPort}`
     const started = performance.now()
     try {
       await sendTestMessage(baseUrl, { tag: TAG, message, data }, key.trim())
@@ -204,17 +203,7 @@ export default function Test() {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={6} sm={2}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label={t('test.apiPort')}
-                  value={apiPort}
-                  onChange={(e) => setApiPort(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={6} sm={2}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   size="small"

@@ -166,17 +166,17 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 			end = n
 		}
 	}
-	bucket := (end - start) / 120
-	if bucket < 1 {
-		bucket = 1
+	bucketSize := (end - start) / 120
+	if bucketSize < int64(time.Second) {
+		bucketSize = int64(time.Second)
 	}
 	if v := q.Get("bucket"); v != "" {
 		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
-			bucket = n
+			bucketSize = n * int64(time.Second)
 		}
 	}
 
-	buckets, _ := h.buf.Buckets(start, end, bucket*int64(time.Second))
+	buckets, _ := h.buf.Buckets(start, end, bucketSize)
 	points := make([]bucketPoint, 0, len(buckets))
 	for ts, count := range buckets {
 		points = append(points, bucketPoint{TS: ts, Count: count})
@@ -405,17 +405,17 @@ func (h *Handler) sessionBuckets(w http.ResponseWriter, r *http.Request) {
 			end = n
 		}
 	}
-	bucket := (end - start) / 120
-	if bucket < 1 {
-		bucket = 1
+	bucketSize := (end - start) / 120
+	if bucketSize < int64(time.Second) {
+		bucketSize = int64(time.Second)
 	}
 	if v := q.Get("bucket"); v != "" {
 		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
-			bucket = n
+			bucketSize = n * int64(time.Second)
 		}
 	}
 
-	buckets, err := h.buf.SessionBuckets(id, start, end, bucket*int64(time.Second))
+	buckets, err := h.buf.SessionBuckets(id, start, end, bucketSize)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
