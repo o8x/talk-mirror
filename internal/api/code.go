@@ -134,8 +134,8 @@ talk_mirror_talk() {
 #include <unistd.h>
 
 #include <cstdint>
-#include <cstring>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -153,24 +153,25 @@ public:
     void talk(const std::string& message,
               const std::vector<std::string>& tag,
               const std::map<std::string, std::string>& data = {}) {
-        std::string tags;
+        std::ostringstream json;
+        json << R"({"tag":[)";
         for (size_t i = 0; i < tag.size(); i++) {
-            if (i) tags += "\",\"";
-            tags += tag[i];
+            if (i) json << ',';
+            json << '"' << tag[i] << '"';
         }
-        std::string fields;
-        for (auto it = data.begin(); it != data.end(); ++it) {
-            if (it != data.begin()) fields += ",";
-            fields += "\"" + it->first + "\":\"" + it->second + "\"";
+        json << R"(],"message":")" << message << R"(","data":{)";
+        bool first = true;
+        for (const auto& [k, v] : data) {
+            if (!first) json << ',';
+            first = false;
+            json << '"' << k << R"(":")" << v << '"';
         }
-        std::string json =
-            "{\"tag\":[\"" + tags + "\"],\"message\":\"" + message +
-            "\",\"data\":{" + fields + "}}";
-        uint16_t len = htons(static_cast<uint16_t>(json.size()));
-        char buf[2 + 65536];
-        std::memcpy(buf, &len, 2);
-        std::memcpy(buf + 2, json.data(), json.size());
-        send(sock_, buf, 2 + json.size(), 0);
+        json << R"(}})";
+
+        const std::string body = json.str();
+        uint16_t len = htons(static_cast<uint16_t>(body.size()));
+        send(sock_, &len, 2, 0);
+        send(sock_, body.data(), body.size(), 0);
     }
 
 private:
