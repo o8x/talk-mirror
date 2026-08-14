@@ -38,7 +38,7 @@ export default function Login() {
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Box component="img" src={logoUrl} sx={{ width: 64, height: 64 }} alt="logo" />
           <Typography variant="h6" fontWeight={700} sx={{ mt: 1 }}>
-            Talk-mirror
+            TALK MIRROR
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Enter your access key

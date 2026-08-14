@@ -65,7 +65,7 @@ export default function Layout() {
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Box component="img" src={logoUrl} sx={{ width: 36, height: 36 }} alt="logo" />
         <Typography variant="h6" fontWeight={700} sx={{ letterSpacing: 0.5 }}>
-          Talk-mirror
+          TALK MIRROR
         </Typography>
       </Box>
       <List sx={{ px: 1 }}>

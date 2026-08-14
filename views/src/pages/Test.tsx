@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
@@ -15,19 +15,44 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import SendIcon from '@mui/icons-material/Send'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import CodeBlock from '../components/CodeBlock'
-import { sendTestMessage } from '../api/client'
+import { getStoredKey, sendTestMessage } from '../api/client'
 import { useT } from '../i18n'
+import { useStore } from '../store/store'
 
 interface Field {
   key: string
   value: string
 }
 
+interface FormState {
+  address: string
+  apiPort: string
+  talkPort: string
+  key: string
+  message: string
+  fields: Field[]
+}
+
 interface Result {
   ok: boolean
   ms: number
   error?: string
+}
+
+const FORM_KEY = 'talk-mirror-test-form'
+const TAG = ['test']
+
+function loadForm(): Partial<FormState> {
+  try {
+    const raw = localStorage.getItem(FORM_KEY)
+    if (raw) return JSON.parse(raw) as Partial<FormState>
+  } catch {
+    /* ignore */
+  }
+  return {}
 }
 
 function genGo(address: string, talkPort: string, message: string, data: Record<string, string>): string {
@@ -58,7 +83,7 @@ function genGo(address: string, talkPort: string, message: string, data: Record<
     '',
     '    msg := map[string]any{',
     '        "time_nano": time.Now().UnixNano(),',
-    '        "tag":       []string{},',
+    '        "tag":       []string{"test"},',
     `        "message":   ${msgLit},`,
     `        "data":      ${dataLit},`,
     '    }',
@@ -91,7 +116,7 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
     `sock = socket.create_connection((${JSON.stringify(address)}, ${port}))`,
     'msg = {',
     '    "time_nano": time.time_ns(),',
-    '    "tag": [],',
+    '    "tag": ["test"],',
     `    "message": ${msgLit},`,
     `    "data": ${dataLit},`,
     '}',
@@ -104,15 +129,23 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
 
 export default function Test() {
   const t = useT()
-  const [address, setAddress] = useState(() => window.location.hostname || '127.0.0.1')
-  const [apiPort, setApiPort] = useState(() => window.location.port || '443')
-  const [talkPort, setTalkPort] = useState('3000')
-  const [key, setKey] = useState('')
-  const [message, setMessage] = useState('')
-  const [fields, setFields] = useState<Field[]>([{ key: '', value: '' }])
+  const darkMode = useStore((s) => s.darkMode)
+  const saved = loadForm()
+  const [address, setAddress] = useState(() => saved.address ?? window.location.hostname ?? '127.0.0.1')
+  const [apiPort, setApiPort] = useState(() => saved.apiPort ?? window.location.port ?? '443')
+  const [talkPort, setTalkPort] = useState(() => saved.talkPort ?? '3000')
+  const [key, setKey] = useState(() => saved.key ?? getStoredKey())
+  const [message, setMessage] = useState(() => saved.message ?? 'hello')
+  const [fields, setFields] = useState<Field[]>(() =>
+    saved.fields?.length ? saved.fields : [{ key: '', value: '' }],
+  )
   const [result, setResult] = useState<Result | null>(null)
   const [running, setRunning] = useState(false)
   const [lang, setLang] = useState<'go' | 'python'>('go')
+
+  useEffect(() => {
+    localStorage.setItem(FORM_KEY, JSON.stringify({ address, apiPort, talkPort, key, message, fields }))
+  }, [address, apiPort, talkPort, key, message, fields])
 
   const setField = (i: number, k: 'key' | 'value', v: string) => {
     setFields((prev) => prev.map((f, idx) => (idx === i ? { ...f, [k]: v } : f)))
@@ -130,7 +163,7 @@ export default function Test() {
     return d
   }, [fields])
 
-  const preview = useMemo(() => JSON.stringify({ message, data }, null, 2), [message, data])
+  const preview = useMemo(() => JSON.stringify({ tag: TAG, message, data }, null, 2), [message, data])
 
   const generated = useMemo(
     () => (lang === 'go' ? genGo(address, talkPort, message, data) : genPython(address, talkPort, message, data)),
@@ -143,7 +176,7 @@ export default function Test() {
     const baseUrl = `https://${address.trim()}:${apiPort.trim()}`
     const started = performance.now()
     try {
-      await sendTestMessage(baseUrl, { message, data }, key.trim())
+      await sendTestMessage(baseUrl, { tag: TAG, message, data }, key.trim())
       setResult({ ok: true, ms: Math.round(performance.now() - started) })
     } catch (e) {
       setResult({ ok: false, ms: Math.round(performance.now() - started), error: String(e) })
@@ -269,8 +302,15 @@ export default function Test() {
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               {t('test.preview')}
             </Typography>
-            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, overflow: 'auto' }}>
-              <pre style={{ margin: 0, fontSize: 12, fontFamily: 'monospace' }}>{preview}</pre>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'auto' }}>
+              <SyntaxHighlighter
+                language="json"
+                style={darkMode ? oneDark : oneLight}
+                customStyle={{ margin: 0, background: 'transparent', fontSize: 12, lineHeight: 1.5 }}
+                codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' } }}
+              >
+                {preview}
+              </SyntaxHighlighter>
             </Box>
           </Card>
           <Card sx={{ p: 2 }}>

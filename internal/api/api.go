@@ -456,11 +456,14 @@ func (h *Handler) ingest(w http.ResponseWriter, r *http.Request) {
 	if in.Data == nil {
 		in.Data = json.RawMessage("{}")
 	}
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	ip, portStr, err := net.SplitHostPort(r.RemoteAddr)
+	port := 0
 	if err != nil {
 		ip = r.RemoteAddr
+	} else {
+		port, _ = strconv.Atoi(portStr)
 	}
-	h.mgr.Handle(ip, 0, "http", in)
-	h.log.Info("http log ingested", "ip", ip, "message", in.Message)
+	h.mgr.Handle(ip, port, "http", in)
+	h.log.Info("http log ingested", "ip", ip, "port", port, "message", in.Message)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
