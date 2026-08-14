@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: bash packaging/linux/make_run.sh "$PWD/talk-mirror" "$VERSION" "${{ matrix.arch }}" dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: talk-mirror-linux-${{ matrix.arch }}-packages
           path: dist/*
@@ -135,7 +135,7 @@ jobs:
         shell: bash
         run: bash packaging/macos/package.sh "$PWD/talk-mirror" "$VERSION" "${{ matrix.arch }}" dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: talk-mirror-macos-${{ matrix.arch }}-pkg
           path: dist/*
@@ -204,7 +204,7 @@ jobs:
           Pop-Location
           Move-Item -Path packaging\windows\talk-mirror-v*_windows-*.exe -Destination . -Force
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: talk-mirror-windows-${{ matrix.arch }}-installer
           path: talk-mirror-v*_windows-*.exe
