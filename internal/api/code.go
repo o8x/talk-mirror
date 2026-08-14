@@ -1,6 +1,10 @@
 package api
 
-import "net/http"
+import (
+	"net"
+	"net/http"
+	"strings"
+)
 
 // appExamples are ready-to-run clients (application mode).
 var appExamples = map[string]string{
@@ -355,5 +359,46 @@ func (h *Handler) code(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fn := fnExamples[lang]
+
+	ip := internalIP()
+	app = strings.ReplaceAll(app, "127.0.0.1", ip)
+	fn = strings.ReplaceAll(fn, "127.0.0.1", ip)
+
 	writeJSON(w, http.StatusOK, map[string]string{"lang": lang, "app": app, "fn": fn})
+}
+
+// internalIP returns the first private IPv4 address of an up, non-loopback
+// interface, falling back to 127.0.0.1 when none is found.
+func internalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "127.0.0.1"
+	}
+	fallback := ""
+	for _, a := range addrs {
+		ipnet, ok := a.(*net.IPNet)
+		if !ok {
+			continue
+		}
+		ip4 := ipnet.IP.To4()
+		if ip4 == nil || ip4.IsLoopback() {
+			continue
+		}
+		if isPrivate(ip4) {
+			return ip4.String()
+		}
+		if fallback == "" {
+			fallback = ip4.String()
+		}
+	}
+	if fallback != "" {
+		return fallback
+	}
+	return "127.0.0.1"
+}
+
+func isPrivate(ip net.IP) bool {
+	return ip[0] == 10 ||
+		(ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31) ||
+		(ip[0] == 192 && ip[1] == 168)
 }
