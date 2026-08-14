@@ -39,6 +39,8 @@ interface Result {
   ok: boolean
   ms: number
   error?: string
+  ip?: string
+  port?: number
 }
 
 const FORM_KEY = 'talk-mirror-test-form'
@@ -129,7 +131,6 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
 export default function Test() {
   const t = useT()
   const darkMode = useStore((s) => s.darkMode)
-  const localIp = useStore((s) => s.localIp)
   const saved = loadForm()
   const [address, setAddress] = useState(() => saved.address ?? window.location.hostname ?? '127.0.0.1')
   const [talkPort, setTalkPort] = useState(() => saved.talkPort ?? '3000')
@@ -176,8 +177,8 @@ export default function Test() {
     const baseUrl = `https://${address.trim()}:${apiPort}`
     const started = performance.now()
     try {
-      await sendTestMessage(baseUrl, { tag: TAG, message, data }, key.trim())
-      setResult({ ok: true, ms: Math.round(performance.now() - started) })
+      const res = await sendTestMessage(baseUrl, { tag: TAG, message, data }, key.trim())
+      setResult({ ok: true, ms: Math.round(performance.now() - started), ip: res.ip, port: res.port })
     } catch (e) {
       setResult({ ok: false, ms: Math.round(performance.now() - started), error: String(e) })
     } finally {
@@ -297,10 +298,10 @@ export default function Test() {
                     {t('test.duration')}: <strong>{result.ms} ms</strong>
                   </Typography>
                   <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                    {t('test.localIp')}: {localIp || '-'}
+                    {t('test.localIp')}: {result.ip ?? '-'}
                   </Typography>
                   <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                    {t('test.port')}: {apiPort}
+                    {t('test.port')}: {result.port ?? '-'}
                   </Typography>
                 </Stack>
               </Box>

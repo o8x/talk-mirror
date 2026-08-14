@@ -111,8 +111,8 @@ export function sendTestMessage(
   baseUrl: string,
   body: { tag?: string[]; message: string; data?: Record<string, string> },
   key: string,
-): Promise<{ ok: boolean }> {
-  return request<{ ok: boolean }>(`${baseUrl}/api/ingest`, {
+): Promise<{ ok: boolean; ip: string; port: number }> {
+  return request<{ ok: boolean; ip: string; port: number }>(`${baseUrl}/api/ingest`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify(body),

@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 import ReactECharts from 'echarts-for-react'
 import type { EChartsOption } from 'echarts'
+import { Box, Typography } from '@mui/material'
 import { chartPalette } from '../theme/echarts'
 import { useStore } from '../store/store'
+import { useT } from '../i18n'
 
 interface Props {
   data: { ts: number; count: number }[]
@@ -12,9 +14,11 @@ interface Props {
 }
 
 export default function TrendChart({ data, height = 240, brushable = false, onBrush }: Props) {
+  const t = useT()
   const darkMode = useStore((s) => s.darkMode)
   const themeColor = useStore((s) => s.themeColor)
   const pal = useMemo(() => chartPalette(darkMode, themeColor), [darkMode, themeColor])
+  const hasData = data.length > 0 && data.some((d) => d.count > 0)
 
   const option = useMemo<EChartsOption>(() => {
     return {
@@ -97,12 +101,33 @@ export default function TrendChart({ data, height = 240, brushable = false, onBr
   }, [brushable, onBrush])
 
   return (
-    <ReactECharts
-      option={option}
-      onEvents={onEvents}
-      style={{ height, width: '100%' }}
-      opts={{ renderer: 'canvas' }}
-      notMerge
-    />
+    <Box sx={{ position: 'relative', height, width: '100%' }}>
+      <ReactECharts
+        option={option}
+        onEvents={onEvents}
+        style={{ height, width: '100%' }}
+        opts={{ renderer: 'canvas' }}
+        notMerge
+      />
+      {!hasData && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {t('common.noData')}
+          </Typography>
+        </Box>
+      )}
+    </Box>
   )
 }

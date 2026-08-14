@@ -41,9 +41,9 @@ import type { BucketPoint, Connection, MessageEvent, Session } from '../types'
 
 const MAX_LIVE = 10000
 
-type ColumnKey = 'time' | 'ip' | 'port' | 'tag' | 'message' | 'data'
-const ALL_COLUMNS: ColumnKey[] = ['time', 'ip', 'port', 'tag', 'message', 'data']
-const DEFAULT_ORDER: ColumnKey[] = ['time', 'ip', 'port', 'tag', 'message', 'data']
+type ColumnKey = 'seq' | 'time' | 'ip' | 'port' | 'tag' | 'message' | 'data'
+const ALL_COLUMNS: ColumnKey[] = ['seq', 'time', 'ip', 'port', 'tag', 'message', 'data']
+const DEFAULT_ORDER: ColumnKey[] = ['seq', 'time', 'ip', 'port', 'tag', 'message', 'data']
 const COL_KEY = 'talk-mirror-session-columns'
 
 function loadOrder(): ColumnKey[] {
@@ -101,6 +101,7 @@ export default function Sessions() {
 
   const columnLabel: Record<ColumnKey, string> = useMemo(
     () => ({
+      seq: t('sessions.seq'),
       time: t('sessions.time'),
       ip: t('sessions.ip'),
       port: t('sessions.port'),
@@ -225,7 +226,7 @@ export default function Sessions() {
       getSessionBuckets(selSession, { seconds: 300 })
         .then(setTrendData)
         .catch(() => {})
-    }, 3000)
+    }, 1000)
     return () => window.clearInterval(timer)
   }, [selSession, rangeSeconds])
 
@@ -238,14 +239,6 @@ export default function Sessions() {
       if (selSession && m.session_id !== selSession) return
       setMessages((prev) => [m, ...prev].slice(0, MAX_LIVE))
       setTotal((n) => n + 1)
-      const key = Math.floor(m.time_nano / 1e9) * 1e9
-      setTrendData((prev) => {
-        const last = prev[prev.length - 1]
-        if (last && last.ts === key) {
-          return [...prev.slice(0, -1), { ts: last.ts, count: last.count + 1 }]
-        }
-        return [...prev, { ts: key, count: 1 }]
-      })
     })
     return off
   }, [selSession, rangeSeconds])
@@ -277,6 +270,19 @@ export default function Sessions() {
 
   const renderCell = (key: ColumnKey, m: MessageEvent): ReactNode => {
     switch (key) {
+      case 'seq':
+        return (
+          <span
+            style={{
+              display: 'inline-block',
+              minWidth: '6ch',
+              textAlign: 'right',
+              fontFamily: 'monospace',
+            }}
+          >
+            {m.seq}
+          </span>
+        )
       case 'time':
         return <span style={{ whiteSpace: 'nowrap' }}>{formatTime(m.time_nano)}</span>
       case 'ip':

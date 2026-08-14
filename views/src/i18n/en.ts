@@ -24,6 +24,7 @@ export const en = {
   'common.end': 'End',
   'common.localMachine': 'Local',
   'common.logout': 'Logout',
+  'common.noData': 'No data',
 
   'pause.banner': 'The system is paused and not receiving any data.',
 
@@ -48,6 +49,7 @@ export const en = {
   'sessions.message': 'Message',
   'sessions.time': 'Time',
   'sessions.data': 'Data',
+  'sessions.seq': 'Seq',
   'sessions.columns': 'Columns',
   'sessions.noMessages': 'No messages yet.',
   'sessions.detail': 'detail',

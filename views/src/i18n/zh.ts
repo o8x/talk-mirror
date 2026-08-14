@@ -26,6 +26,7 @@ export const zh: Dict = {
   'common.end': '结束',
   'common.localMachine': '本机',
   'common.logout': '退出登录',
+  'common.noData': '暂无数据',
 
   'pause.banner': '系统已暂停，当前不接收任何数据。',
 
@@ -50,6 +51,7 @@ export const zh: Dict = {
   'sessions.message': '消息',
   'sessions.time': '时间',
   'sessions.data': '数据',
+  'sessions.seq': '序号',
   'sessions.columns': '列',
   'sessions.noMessages': '暂无消息。',
   'sessions.detail': '详情',

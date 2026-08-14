@@ -148,6 +148,25 @@ type bucketPoint struct {
 	Count int64 `json:"count"`
 }
 
+// fillBuckets returns a fixed sequence of bucket points ending at the aligned
+// end time, filling empty buckets with a count of zero. It yields up to 300
+// points (one per bucket) covering the requested range.
+func fillBuckets(buckets map[int64]int64, start, end, bucketSize int64) []bucketPoint {
+	if bucketSize <= 0 {
+		bucketSize = int64(time.Second)
+	}
+	endAligned := (end / bucketSize) * bucketSize
+	first := endAligned - 299*bucketSize
+	if first < start {
+		first = start
+	}
+	points := make([]bucketPoint, 0, 300)
+	for ts := first; ts <= endAligned; ts += bucketSize {
+		points = append(points, bucketPoint{TS: ts, Count: buckets[ts]})
+	}
+	return points
+}
+
 func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	now := time.Now().UnixNano()
@@ -168,7 +187,7 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 			end = n
 		}
 	}
-	bucketSize := (end - start) / 120
+	bucketSize := (end - start) / 300
 	if bucketSize < int64(time.Second) {
 		bucketSize = int64(time.Second)
 	}
@@ -179,11 +198,7 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	buckets, _ := h.buf.Buckets(start, end, bucketSize)
-	points := make([]bucketPoint, 0, len(buckets))
-	for ts, count := range buckets {
-		points = append(points, bucketPoint{TS: ts, Count: count})
-	}
-	sort.Slice(points, func(i, j int) bool { return points[i].TS < points[j].TS })
+	points := fillBuckets(buckets, start, end, bucketSize)
 
 	qps := 0.0
 	if n, ok := buckets[(now/int64(time.Second))*int64(time.Second)]; ok {
@@ -441,7 +456,7 @@ func (h *Handler) sessionBuckets(w http.ResponseWriter, r *http.Request) {
 			end = n
 		}
 	}
-	bucketSize := (end - start) / 120
+	bucketSize := (end - start) / 300
 	if bucketSize < int64(time.Second) {
 		bucketSize = int64(time.Second)
 	}
@@ -456,11 +471,7 @@ func (h *Handler) sessionBuckets(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	points := make([]bucketPoint, 0, len(buckets))
-	for ts, count := range buckets {
-		points = append(points, bucketPoint{TS: ts, Count: count})
-	}
-	sort.Slice(points, func(i, j int) bool { return points[i].TS < points[j].TS })
+	points := fillBuckets(buckets, start, end, bucketSize)
 	writeJSON(w, http.StatusOK, points)
 }
 
@@ -546,5 +557,5 @@ func (h *Handler) ingest(w http.ResponseWriter, r *http.Request) {
 	}
 	h.mgr.Handle(ip, port, "http", in)
 	h.log.Info("http log ingested", "ip", ip, "port", port, "message", in.Message)
-	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ip": ip, "port": port})
 }
