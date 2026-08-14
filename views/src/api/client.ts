@@ -1,4 +1,4 @@
-import type { Connection, MessagesResponse, Overview, Session } from '../types'
+import type { BucketPoint, Connection, MessagesResponse, Overview, Session } from '../types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init)
@@ -8,8 +8,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export function getOverview(seconds: number): Promise<Overview> {
-  return request<Overview>(`/api/stats/overview?seconds=${seconds}`)
+export function getOverview(opts: { seconds?: number; start?: number; end?: number } = {}): Promise<Overview> {
+  const p = new URLSearchParams()
+  if (opts.seconds) p.set('seconds', String(opts.seconds))
+  if (opts.start) p.set('start', String(opts.start))
+  if (opts.end) p.set('end', String(opts.end))
+  return request<Overview>(`/api/stats/overview?${p.toString()}`)
 }
 
 export function getConnections(): Promise<Connection[]> {
@@ -31,6 +35,17 @@ export function getMessages(
   p.set('limit', String(opts.limit ?? 100))
   p.set('offset', String(opts.offset ?? 0))
   return request<MessagesResponse>(`/api/sessions/${sessionId}/messages?${p.toString()}`)
+}
+
+export function getSessionBuckets(
+  sessionId: string,
+  opts: { seconds?: number; start?: number; end?: number } = {},
+): Promise<BucketPoint[]> {
+  const p = new URLSearchParams()
+  if (opts.seconds) p.set('seconds', String(opts.seconds))
+  if (opts.start) p.set('start', String(opts.start))
+  if (opts.end) p.set('end', String(opts.end))
+  return request<BucketPoint[]>(`/api/sessions/${sessionId}/buckets?${p.toString()}`)
 }
 
 export function getSettings(): Promise<Record<string, string>> {

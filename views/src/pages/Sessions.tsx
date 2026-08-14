@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   Box,
   Card,
@@ -7,7 +7,13 @@ import {
   FormControl,
   IconButton,
   InputLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   MenuItem,
+  Popover,
   Select,
   Stack,
   Table,
@@ -21,14 +27,37 @@ import {
 } from '@mui/material'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
+import ViewColumnIcon from '@mui/icons-material/ViewColumn'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import TrendChart from '../components/TrendChart'
-import { getConnections, getMessages, getSessions } from '../api/client'
+import { getConnections, getMessages, getSessions, getSessionBuckets } from '../api/client'
 import { ws } from '../api/ws'
 import { formatTime, nowNano } from '../utils'
 import { useT } from '../i18n'
-import type { Connection, MessageEvent, Session } from '../types'
+import { useStore } from '../store/store'
+import type { BucketPoint, Connection, MessageEvent, Session } from '../types'
 
 const MAX_LIVE = 10000
+
+type ColumnKey = 'time' | 'ip' | 'port' | 'tag' | 'message' | 'data'
+const ALL_COLUMNS: ColumnKey[] = ['time', 'ip', 'port', 'tag', 'message', 'data']
+const DEFAULT_ORDER: ColumnKey[] = ['time', 'ip', 'port', 'tag', 'message', 'data']
+const COL_KEY = 'talk-mirror-session-columns'
+
+function loadOrder(): ColumnKey[] {
+  try {
+    const raw = localStorage.getItem(COL_KEY)
+    if (raw) {
+      const arr = JSON.parse(raw) as ColumnKey[]
+      const valid = arr.filter((k) => ALL_COLUMNS.includes(k))
+      if (valid.length > 0) return valid
+    }
+  } catch {
+    /* ignore */
+  }
+  return [...DEFAULT_ORDER]
+}
 
 const ranges = [
   { label: 'Live', seconds: 0 },
@@ -38,62 +67,17 @@ const ranges = [
   { label: '1d', seconds: 86400 },
 ]
 
-function Row({ m, t }: { m: MessageEvent; t: (k: string) => string }) {
-  const [open, setOpen] = useState(false)
+function JsonBlock({ value }: { value: unknown }) {
+  const darkMode = useStore((s) => s.darkMode)
   return (
-    <>
-      <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
-        <TableCell padding="checkbox">
-          <IconButton size="small" onClick={() => setOpen(!open)}>
-            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
-        </TableCell>
-        <TableCell sx={{ fontFamily: 'monospace' }}>{m.ip}</TableCell>
-        <TableCell sx={{ fontFamily: 'monospace' }}>{m.port}</TableCell>
-        <TableCell>
-          {(m.tag ?? []).map((tag) => (
-            <Chip key={tag} label={tag} size="small" variant="outlined" sx={{ mr: 0.5 }} />
-          ))}
-        </TableCell>
-        <TableCell>{m.message}</TableCell>
-        <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>
-          {formatTime(m.time_nano)}
-        </TableCell>
-      </TableRow>
-      <TableRow>
-        <TableCell sx={{ py: 0 }} colSpan={6}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box sx={{ py: 2, pl: 6 }}>
-              <Typography variant="caption" color="text.secondary">
-                {t('sessions.detail')}
-              </Typography>
-              <pre
-                style={{
-                  margin: 0,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  overflow: 'auto',
-                  color: 'inherit',
-                }}
-              >
-                {JSON.stringify(
-                  {
-                    time_nano: m.time_nano,
-                    tag: m.tag,
-                    message: m.message,
-                    data: m.data,
-                    seq: m.seq,
-                    received_at: m.received_at,
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-    </>
+    <SyntaxHighlighter
+      language="json"
+      style={darkMode ? oneDark : oneLight}
+      customStyle={{ margin: 0, background: 'transparent', fontSize: 12, lineHeight: 1.5 }}
+      codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' } }}
+    >
+      {JSON.stringify(value, null, 2)}
+    </SyntaxHighlighter>
   )
 }
 
@@ -107,7 +91,26 @@ export default function Sessions() {
   const [total, setTotal] = useState(0)
   const [rangeSeconds, setRangeSeconds] = useState(0)
   const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState(100)
+  const [pageSize, setPageSize] = useState(20)
+  const [trendData, setTrendData] = useState<BucketPoint[]>([])
+  const [order, setOrder] = useState<ColumnKey[]>(loadOrder)
+  const [colAnchor, setColAnchor] = useState<HTMLElement | null>(null)
+
+  const columnLabel: Record<ColumnKey, string> = useMemo(
+    () => ({
+      time: t('sessions.time'),
+      ip: t('sessions.ip'),
+      port: t('sessions.port'),
+      tag: t('sessions.tag'),
+      message: t('sessions.message'),
+      data: t('sessions.data'),
+    }),
+    [t],
+  )
+
+  useEffect(() => {
+    localStorage.setItem(COL_KEY, JSON.stringify(order))
+  }, [order])
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -123,15 +126,12 @@ export default function Sessions() {
   useEffect(() => {
     refreshSessions().then((ss) => {
       if (ss.length === 0) return
-      // The list is sorted by last_active_at descending, so the first entry is
-      // the most recently active session (selected even if a single session).
       const recent = ss[0]
       setSelConn(recent.client_id)
       setSelSession(recent.id)
     })
   }, [refreshSessions])
 
-  // keep session list fresh on connection/session events
   useEffect(() => {
     const off = ws.on((ev) => {
       if (ev.type === 'session' || ev.type === 'connection') {
@@ -141,12 +141,11 @@ export default function Sessions() {
     return off
   }, [refreshSessions])
 
-  // subscribe to the selected session
   useEffect(() => {
     ws.subscribe(selSession, '')
   }, [selSession])
 
-  // fetch data when selection or range or pagination changes
+  // fetch table data when selection or range or pagination changes
   useEffect(() => {
     let alive = true
     if (!selSession) {
@@ -161,16 +160,15 @@ export default function Sessions() {
         .then((res) => {
           if (!alive) return
           setTotal(res.total)
-          setMessages(res.items as MessageEvent[])
+          setMessages(res.items)
         })
         .catch(() => {})
     } else {
-      // live mode: seed with recent history
       getMessages(selSession, { limit: 500 })
         .then((res) => {
           if (!alive) return
           setTotal(res.total)
-          setMessages(res.items as MessageEvent[])
+          setMessages(res.items)
         })
         .catch(() => {})
     }
@@ -178,6 +176,18 @@ export default function Sessions() {
       alive = false
     }
   }, [selSession, rangeSeconds, page, pageSize])
+
+  // fetch trend buckets from the backend (full history, not just the in-memory list)
+  useEffect(() => {
+    if (!selSession) {
+      setTrendData([])
+      return
+    }
+    const seconds = rangeSeconds > 0 ? rangeSeconds : 300
+    getSessionBuckets(selSession, { seconds })
+      .then(setTrendData)
+      .catch(() => setTrendData([]))
+  }, [selSession, rangeSeconds])
 
   // realtime push
   useEffect(() => {
@@ -187,22 +197,18 @@ export default function Sessions() {
       if (rangeSeconds > 0) return
       if (selSession && m.session_id !== selSession) return
       setMessages((prev) => [m, ...prev].slice(0, MAX_LIVE))
-      setTotal((t) => t + 1)
+      setTotal((n) => n + 1)
+      const key = Math.floor(m.time_nano / 1e9) * 1e9
+      setTrendData((prev) => {
+        const last = prev[prev.length - 1]
+        if (last && last.ts === key) {
+          return [...prev.slice(0, -1), { ts: last.ts, count: last.count + 1 }]
+        }
+        return [...prev, { ts: key, count: 1 }]
+      })
     })
     return off
   }, [selSession, rangeSeconds])
-
-  const trendData = useMemo(() => {
-    const buckets = new Map<number, number>()
-    const size = 1e9
-    for (const m of messages) {
-      const key = Math.floor(m.time_nano / size) * size
-      buckets.set(key, (buckets.get(key) ?? 0) + 1)
-    }
-    return [...buckets.entries()]
-      .map(([ts, count]) => ({ ts, count }))
-      .sort((a, b) => a.ts - b.ts)
-  }, [messages])
 
   const filteredSessions = useMemo(() => {
     if (!selConn) return sessions
@@ -222,12 +228,64 @@ export default function Sessions() {
       getMessages(selSession, { start: startNs, end: endNs, limit: pageSize, offset: 0 })
         .then((res) => {
           setTotal(res.total)
-          setMessages(res.items as MessageEvent[])
+          setMessages(res.items)
         })
         .catch(() => {})
     },
     [selSession, pageSize],
   )
+
+  const renderCell = (key: ColumnKey, m: MessageEvent): ReactNode => {
+    switch (key) {
+      case 'time':
+        return <span style={{ whiteSpace: 'nowrap' }}>{formatTime(m.time_nano)}</span>
+      case 'ip':
+        return <span style={{ fontFamily: 'monospace' }}>{m.ip}</span>
+      case 'port':
+        return <span style={{ fontFamily: 'monospace' }}>{m.port}</span>
+      case 'tag':
+        return (m.tag ?? []).map((tag) => (
+          <Chip key={tag} label={tag} size="small" variant="outlined" sx={{ mr: 0.5 }} />
+        ))
+      case 'message':
+        return m.message
+      case 'data':
+        return (
+          <Typography
+            variant="body2"
+            component="span"
+            sx={{
+              fontFamily: 'monospace',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: 'inline-block',
+              maxWidth: 320,
+              verticalAlign: 'middle',
+            }}
+          >
+            {JSON.stringify(m.data)}
+          </Typography>
+        )
+    }
+  }
+
+  const toggleColumn = (key: ColumnKey) => {
+    setOrder((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  }
+
+  const moveColumn = (key: ColumnKey, dir: -1 | 1) => {
+    setOrder((prev) => {
+      const idx = prev.indexOf(key)
+      const j = idx + dir
+      if (idx < 0 || j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[idx], next[j]] = [next[j], next[idx]]
+      return next
+    })
+  }
+
+  const hiddenColumns = ALL_COLUMNS.filter((k) => !order.includes(k))
 
   return (
     <Box>
@@ -282,7 +340,58 @@ export default function Sessions() {
             />
           ))}
         </Stack>
+        <IconButton size="small" onClick={(e) => setColAnchor(e.currentTarget)} title={t('sessions.columns')}>
+          <ViewColumnIcon fontSize="small" />
+        </IconButton>
       </Stack>
+
+      <Popover
+        open={!!colAnchor}
+        anchorEl={colAnchor}
+        onClose={() => setColAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Box sx={{ width: 260, py: 1 }}>
+          <Typography variant="subtitle2" sx={{ px: 2, pb: 1 }}>
+            {t('sessions.columns')}
+          </Typography>
+          <List dense disablePadding>
+            {order.map((key, i) => (
+              <ListItem
+                key={key}
+                disablePadding
+                secondaryAction={
+                  <>
+                    <IconButton size="small" disabled={i === 0} onClick={() => moveColumn(key, -1)}>
+                      <KeyboardArrowUpIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" disabled={i === order.length - 1} onClick={() => moveColumn(key, 1)}>
+                      <KeyboardArrowDownIcon fontSize="small" />
+                    </IconButton>
+                  </>
+                }
+              >
+                <ListItemButton onClick={() => toggleColumn(key)} dense>
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <span style={{ fontSize: 14 }}>✓</span>
+                  </ListItemIcon>
+                  <ListItemText primary={columnLabel[key]} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+            {hiddenColumns.map((key) => (
+              <ListItem key={key} disablePadding>
+                <ListItemButton onClick={() => toggleColumn(key)} dense>
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <span style={{ opacity: 0.3, fontSize: 14 }}>✓</span>
+                  </ListItemIcon>
+                  <ListItemText primary={columnLabel[key]} sx={{ opacity: 0.6 }} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Popover>
 
       <Card sx={{ p: 2, mb: 2 }}>
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -300,20 +409,18 @@ export default function Sessions() {
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox" />
-                <TableCell>{t('sessions.ip')}</TableCell>
-                <TableCell>{t('sessions.port')}</TableCell>
-                <TableCell>{t('sessions.tag')}</TableCell>
-                <TableCell>{t('sessions.message')}</TableCell>
-                <TableCell>{t('sessions.time')}</TableCell>
+                {order.map((key) => (
+                  <TableCell key={key}>{columnLabel[key]}</TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
               {pageMessages.map((m) => (
-                <Row key={`${m.session_id}-${m.seq}`} m={m} t={t} />
+                <Row key={`${m.session_id}-${m.seq}`} m={m} order={order} renderCell={renderCell} t={t} />
               ))}
               {pageMessages.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary', py: 4 }}>
+                  <TableCell colSpan={order.length + 1} align="center" sx={{ color: 'text.secondary', py: 4 }}>
                     {t('sessions.noMessages')}
                   </TableCell>
                 </TableRow>
@@ -331,9 +438,58 @@ export default function Sessions() {
             setPageSize(parseInt(e.target.value, 10))
             setPage(0)
           }}
-          rowsPerPageOptions={[10, 100, 1000]}
+          rowsPerPageOptions={[10, 20, 100, 1000]}
         />
       </Card>
     </Box>
+  )
+}
+
+function Row({
+  m,
+  order,
+  renderCell,
+  t,
+}: {
+  m: MessageEvent
+  order: ColumnKey[]
+  renderCell: (key: ColumnKey, m: MessageEvent) => ReactNode
+  t: (k: string) => string
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
+        <TableCell padding="checkbox">
+          <IconButton size="small" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        {order.map((key) => (
+          <TableCell key={key}>{renderCell(key, m)}</TableCell>
+        ))}
+      </TableRow>
+      <TableRow>
+        <TableCell sx={{ py: 0 }} colSpan={order.length + 1}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box sx={{ py: 2, pl: 6 }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('sessions.detail')}
+              </Typography>
+              <JsonBlock
+                value={{
+                  time_nano: m.time_nano,
+                  tag: m.tag,
+                  message: m.message,
+                  data: m.data,
+                  seq: m.seq,
+                  received_at: m.received_at,
+                }}
+              />
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
   )
 }

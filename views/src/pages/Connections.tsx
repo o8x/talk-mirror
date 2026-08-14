@@ -34,7 +34,7 @@ export default function Connections() {
 
   const refresh = useCallback(async () => {
     try {
-      const [cs, ov] = await Promise.all([getConnections(), getOverview(300)])
+      const [cs, ov] = await Promise.all([getConnections(), getOverview({ seconds: 300 })])
       setConnections(cs)
       setOverview(ov)
     } catch {

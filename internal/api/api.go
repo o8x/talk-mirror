@@ -40,6 +40,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/connections/{id}", h.connectionDetail)
 	mux.HandleFunc("GET /api/sessions", h.listSessions)
 	mux.HandleFunc("GET /api/sessions/{id}/messages", h.sessionMessages)
+	mux.HandleFunc("GET /api/sessions/{id}/buckets", h.sessionBuckets)
 	mux.HandleFunc("GET /api/settings", h.getSettings)
 	mux.HandleFunc("POST /api/settings", h.saveSettings)
 	mux.HandleFunc("POST /api/pause", h.pause)
@@ -75,26 +76,36 @@ type bucketPoint struct {
 }
 
 func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
-	seconds := int64(300)
-	if v := r.URL.Query().Get("seconds"); v != "" {
+	q := r.URL.Query()
+	now := time.Now().UnixNano()
+	start := now - 300*int64(time.Second)
+	end := now
+	if v := q.Get("seconds"); v != "" {
 		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
-			seconds = n
+			start = now - n*int64(time.Second)
 		}
 	}
-	bucket := int64(seconds / 120)
+	if v := q.Get("start"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			start = n
+		}
+	}
+	if v := q.Get("end"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			end = n
+		}
+	}
+	bucket := (end - start) / 120
 	if bucket < 1 {
 		bucket = 1
 	}
-	if v := r.URL.Query().Get("bucket"); v != "" {
+	if v := q.Get("bucket"); v != "" {
 		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
 			bucket = n
 		}
 	}
 
-	now := time.Now().UnixNano()
-	start := now - seconds*int64(time.Second)
-
-	buckets, _ := h.buf.Buckets(start, now, bucket*int64(time.Second))
+	buckets, _ := h.buf.Buckets(start, end, bucket*int64(time.Second))
 	points := make([]bucketPoint, 0, len(buckets))
 	for ts, count := range buckets {
 		points = append(points, bucketPoint{TS: ts, Count: count})
@@ -198,13 +209,14 @@ func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 // --- messages ---
 
 type messagesResponse struct {
-	Total int64          `json:"total"`
-	Items []model.Record `json:"items"`
+	Total int64                  `json:"total"`
+	Items []session.MessageEvent `json:"items"`
 }
 
 func (h *Handler) sessionMessages(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if h.mgr.SessionByID(id) == nil {
+	sess := h.mgr.SessionByID(id)
+	if sess == nil {
 		writeErr(w, http.StatusNotFound, "session not found")
 		return
 	}
@@ -232,16 +244,76 @@ func (h *Handler) sessionMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Slice(records, func(i, j int) bool { return records[i].TimeNano > records[j].TimeNano })
 
-	items := []model.Record{}
+	slice := records
 	if offset < len(records) {
 		hi := offset + limit
 		if hi > len(records) {
 			hi = len(records)
 		}
-		items = records[offset:hi]
+		slice = records[offset:hi]
+	}
+
+	items := make([]session.MessageEvent, 0, len(slice))
+	for _, rec := range slice {
+		items = append(items, session.MessageEvent{
+			Record:   rec,
+			IP:       sess.IP,
+			Port:     sess.Port,
+			Protocol: sess.Protocol,
+		})
 	}
 
 	writeJSON(w, http.StatusOK, messagesResponse{Total: total, Items: items})
+}
+
+// sessionBuckets returns per-bucket message counts for a session.
+func (h *Handler) sessionBuckets(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if h.mgr.SessionByID(id) == nil {
+		writeErr(w, http.StatusNotFound, "session not found")
+		return
+	}
+	q := r.URL.Query()
+	now := time.Now().UnixNano()
+	seconds := int64(300)
+	if v := q.Get("seconds"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			seconds = n
+		}
+	}
+	start := now - seconds*int64(time.Second)
+	end := now
+	if v := q.Get("start"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			start = n
+		}
+	}
+	if v := q.Get("end"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			end = n
+		}
+	}
+	bucket := (end - start) / 120
+	if bucket < 1 {
+		bucket = 1
+	}
+	if v := q.Get("bucket"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			bucket = n
+		}
+	}
+
+	buckets, err := h.buf.SessionBuckets(id, start, end, bucket*int64(time.Second))
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	points := make([]bucketPoint, 0, len(buckets))
+	for ts, count := range buckets {
+		points = append(points, bucketPoint{TS: ts, Count: count})
+	}
+	sort.Slice(points, func(i, j int) bool { return points[i].TS < points[j].TS })
+	writeJSON(w, http.StatusOK, points)
 }
 
 // --- settings ---

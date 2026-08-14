@@ -65,13 +65,13 @@ export default function TrendChart({ data, height = 240, brushable = false, onBr
       ...(brushable
         ? {
             brush: {
-              toolbox: ['rect', 'clear'],
-              brushStyle: { color: pal.primary, opacity: 0.3, borderWidth: 1 },
               xAxisIndex: 0,
+              brushMode: 'single',
+              removeOnClick: true,
+              brushStyle: { color: pal.primary, opacity: 0.3, borderWidth: 1 },
               throttleType: 'debounce',
               throttleDelay: 300,
             },
-            toolbox: { show: true, feature: { brush: { type: ['rect', 'clear'] } }, right: 8, top: 0 },
           }
         : {}),
     }

@@ -18,6 +18,9 @@ export const en = {
   'common.closed': 'closed',
   'common.all': 'All',
   'common.none': 'None',
+  'common.apply': 'Apply',
+  'common.start': 'Start',
+  'common.end': 'End',
 
   'pause.banner': 'The system is paused and not receiving any data.',
 
@@ -41,6 +44,8 @@ export const en = {
   'sessions.tag': 'Tag',
   'sessions.message': 'Message',
   'sessions.time': 'Time',
+  'sessions.data': 'Data',
+  'sessions.columns': 'Columns',
   'sessions.noMessages': 'No messages yet.',
   'sessions.detail': 'detail',
 

@@ -57,7 +57,7 @@ export interface Overview {
 
 export interface MessagesResponse {
   total: number
-  items: RecordItem[]
+  items: MessageEvent[]
 }
 
 export type WsEvent =

@@ -110,6 +110,29 @@ func (s *Store) GlobalBuckets(start, end int64, bucketSize int64) (map[int64]int
 	return buckets, iter.Error()
 }
 
+// SessionBuckets counts a session's records grouped into fixed-width buckets.
+func (s *Store) SessionBuckets(sessionID string, start, end int64, bucketSize int64) (map[int64]int64, error) {
+	if bucketSize <= 0 {
+		bucketSize = 1
+	}
+	prefix := sessionPrefix(sessionID)
+	iter := s.db.NewIterator(util.BytesPrefix(prefix), nil)
+	defer iter.Release()
+
+	buckets := map[int64]int64{}
+	for iter.Next() {
+		_, ts, _ := decodeSessionKey(iter.Key())
+		if ts < start {
+			continue
+		}
+		if end > 0 && ts >= end {
+			break
+		}
+		buckets[(ts/bucketSize)*bucketSize]++
+	}
+	return buckets, iter.Error()
+}
+
 // --- key encoding ---
 
 var (

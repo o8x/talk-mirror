@@ -130,6 +130,29 @@ func (b *Buffer) Buckets(start, end, bucketSize int64) (map[int64]int64, error) 
 	return buckets, nil
 }
 
+// SessionBuckets returns per-bucket counts for a session within [start, end).
+func (b *Buffer) SessionBuckets(sessionID string, start, end, bucketSize int64) (map[int64]int64, error) {
+	buckets, err := b.db.SessionBuckets(sessionID, start, end, bucketSize)
+	if err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	for _, r := range b.pending {
+		if r.SessionID != sessionID {
+			continue
+		}
+		if r.TimeNano < start {
+			continue
+		}
+		if end > 0 && r.TimeNano >= end {
+			continue
+		}
+		buckets[(r.TimeNano/bucketSize)*bucketSize]++
+	}
+	b.mu.Unlock()
+	return buckets, nil
+}
+
 func filterPending(pending []model.Record, sessionID string, start, end int64) []model.Record {
 	var out []model.Record
 	for _, r := range pending {

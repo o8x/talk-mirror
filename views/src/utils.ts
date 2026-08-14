@@ -4,10 +4,13 @@ export function formatTime(ns: number): string {
 }
 
 export function formatCount(n: number): string {
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B'
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'
-  return String(n)
+  if (n >= 1e9) return trimZeros((n / 1e9).toFixed(2)) + 'B'
+  if (n >= 1e6) return trimZeros((n / 1e6).toFixed(2)) + 'M'
+  return n.toLocaleString()
+}
+
+function trimZeros(s: string): string {
+  return s.replace(/\.?0+$/, '')
 }
 
 export function formatQps(n: number): string {

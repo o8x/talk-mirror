@@ -20,6 +20,9 @@ export const zh: Dict = {
   'common.closed': '已关闭',
   'common.all': '全部',
   'common.none': '无',
+  'common.apply': '应用',
+  'common.start': '开始',
+  'common.end': '结束',
 
   'pause.banner': '系统已暂停，当前不接收任何数据。',
 
@@ -43,6 +46,8 @@ export const zh: Dict = {
   'sessions.tag': '标签',
   'sessions.message': '消息',
   'sessions.time': '时间',
+  'sessions.data': '数据',
+  'sessions.columns': '列',
   'sessions.noMessages': '暂无消息。',
   'sessions.detail': '详情',
 
