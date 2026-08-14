@@ -5,6 +5,7 @@
 <h1 align="center">Talk-mirror</h1>
 
 <p align="center">
+  <a href="https://github.com/o8x/talk-mirror/actions/workflows/ci.yml"><img src="https://github.com/o8x/talk-mirror/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/o8x/talk-mirror/blob/main/LICENSE"><img src="https://img.shields.io/github/license/o8x/talk-mirror" alt="License"></a>
   <a href="https://github.com/o8x/talk-mirror/releases"><img src="https://img.shields.io/github/v/release/o8x/talk-mirror" alt="Release"></a>
   <a href="https://github.com/o8x/talk-mirror/blob/main/go.mod"><img src="https://img.shields.io/github/go-mod/go-version/o8x/talk-mirror" alt="Go version"></a>
@@ -235,6 +236,12 @@ cd views && pnpm install && pnpm dev
 # full build
 make build
 ```
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+development workflow, [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community
+guidelines, and [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
 ## License
 

@@ -1,0 +1,45 @@
+name: Bug report
+description: File a bug report
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report a bug!
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which version of talk-mirror are you running?
+      placeholder: e.g. v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: e.g. Ubuntu 24.04 / macOS 14 / Windows 11
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: A clear description of the unexpected behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: 1. ... 2. ... 3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant log output (from `-d <data-dir>/talk-mirror.log` or the console).
+      render: text

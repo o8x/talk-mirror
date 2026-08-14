@@ -18,7 +18,8 @@ build: web
 run: build
 	./$(BINARY)
 
-test:
+test: web
+	go vet ./...
 	go test ./...
 
 clean:
