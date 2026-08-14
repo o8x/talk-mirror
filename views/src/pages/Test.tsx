@@ -326,6 +326,22 @@ export default function Test() {
             </Grid>
 
             <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                {t('test.preview')}
+              </Typography>
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'auto' }}>
+                <SyntaxHighlighter
+                  language="json"
+                  style={darkMode ? oneDark : oneLight}
+                  customStyle={{ margin: 0, background: 'transparent', fontSize: 12, lineHeight: 1.5 }}
+                  codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' } }}
+                >
+                  {preview}
+                </SyntaxHighlighter>
+              </Box>
+            </Box>
+
+            <Box sx={{ mt: 3 }}>
               <Button variant="contained" startIcon={<SendIcon />} onClick={run} disabled={running}>
                 {t('test.run')}
               </Button>
@@ -362,21 +378,6 @@ export default function Test() {
         </Grid>
 
         <Grid item xs={12} lg={6}>
-          <Card sx={{ p: 3, mb: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {t('test.preview')}
-            </Typography>
-            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'auto' }}>
-              <SyntaxHighlighter
-                language="json"
-                style={darkMode ? oneDark : oneLight}
-                customStyle={{ margin: 0, background: 'transparent', fontSize: 12, lineHeight: 1.5 }}
-                codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' } }}
-              >
-                {preview}
-              </SyntaxHighlighter>
-            </Box>
-          </Card>
           <Card sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="subtitle2" color="text.secondary">
