@@ -5,6 +5,10 @@
 <h1 align="center">Talk-mirror</h1>
 
 <p align="center">
+  <a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/o8x/talk-mirror/actions/workflows/ci.yml"><img src="https://github.com/o8x/talk-mirror/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/o8x/talk-mirror/blob/main/LICENSE"><img src="https://img.shields.io/github/license/o8x/talk-mirror" alt="License"></a>
   <a href="https://github.com/o8x/talk-mirror/releases"><img src="https://img.shields.io/github/v/release/o8x/talk-mirror" alt="Release"></a>
