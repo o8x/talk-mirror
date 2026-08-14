@@ -23,6 +23,7 @@ export const en = {
   'common.start': 'Start',
   'common.end': 'End',
   'common.localMachine': 'Local',
+  'common.logout': 'Logout',
 
   'pause.banner': 'The system is paused and not receiving any data.',
 

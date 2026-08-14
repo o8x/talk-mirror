@@ -30,8 +30,9 @@ import PauseCircleIcon from '@mui/icons-material/PauseCircle'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import TranslateIcon from '@mui/icons-material/Translate'
 import GitHubIcon from '@mui/icons-material/GitHub'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useStore } from '../store/store'
-import { setPause, saveSettings } from '../api/client'
+import { setPause, saveSettings, clearStoredKey } from '../api/client'
 import { LANGS, useLang, useT } from '../i18n'
 import logoUrl from '../assets/logo.svg'
 
@@ -47,6 +48,7 @@ export default function Layout() {
   const toggleDark = useStore((s) => s.toggleDark)
   const paused = useStore((s) => s.paused)
   const setPaused = useStore((s) => s.setPaused)
+  const clearKey = useStore((s) => s.clearKey)
   const wsConnected = useStore((s) => s.wsConnected)
   const [mobileOpen, setMobileOpen] = useState(false)
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -111,11 +113,30 @@ export default function Layout() {
         }}
       >
         <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            {items.find((i) =>
-              i.path === '/' ? location.pathname === '/' : location.pathname.startsWith(i.path),
-            )?.label ?? ''}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <TranslateIcon fontSize="small" color="action" />
+              <Select
+                size="small"
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                variant="standard"
+                disableUnderline
+                sx={{ fontSize: 14, '& .MuiSelect-select': { py: 0.5 } }}
+              >
+                {LANGS.map((l) => (
+                  <MenuItem key={l.value} value={l.value}>
+                    {l.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+            <Typography variant="subtitle1" fontWeight={600}>
+              {items.find((i) =>
+                i.path === '/' ? location.pathname === '/' : location.pathname.startsWith(i.path),
+              )?.label ?? ''}
+            </Typography>
+          </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
               onClick={() => window.open('https://github.com/o8x/talk-mirror', '_blank', 'noopener')}
@@ -142,23 +163,16 @@ export default function Layout() {
             >
               {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <TranslateIcon fontSize="small" color="action" />
-              <Select
-                size="small"
-                value={lang}
-                onChange={(e) => setLang(e.target.value)}
-                variant="standard"
-                disableUnderline
-                sx={{ fontSize: 14, '& .MuiSelect-select': { py: 0.5 } }}
+            <Tooltip title={t('common.logout')}>
+              <IconButton
+                onClick={() => {
+                  clearKey()
+                  clearStoredKey()
+                }}
               >
-                {LANGS.map((l) => (
-                  <MenuItem key={l.value} value={l.value}>
-                    {l.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
+                <LogoutIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
       </AppBar>

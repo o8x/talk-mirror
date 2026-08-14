@@ -14,7 +14,7 @@ interface Props {
 export default function TrendChart({ data, height = 240, brushable = false, onBrush }: Props) {
   const darkMode = useStore((s) => s.darkMode)
   const themeColor = useStore((s) => s.themeColor)
-  const pal = chartPalette(darkMode, themeColor)
+  const pal = useMemo(() => chartPalette(darkMode, themeColor), [darkMode, themeColor])
 
   const option = useMemo<EChartsOption>(() => {
     return {
@@ -44,7 +44,10 @@ export default function TrendChart({ data, height = 240, brushable = false, onBr
           name: 'messages',
           type: 'line',
           smooth: true,
-          showSymbol: false,
+          showSymbol: true,
+          symbol: 'circle',
+          symbolSize: 5,
+          itemStyle: { color: pal.primary },
           data: data.map((d) => [Math.floor(d.ts / 1e6), d.count]),
           lineStyle: { color: pal.primary, width: 2 },
           areaStyle: {
