@@ -1,0 +1,25 @@
+# Build output
+/talk-mirror
+/dist/
+
+# Runtime data
+/data/
+
+# Go
+*.test
+*.out
+vendor/
+
+# Frontend
+views/node_modules/
+views/dist/
+views/.vite/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Logs
+*.log

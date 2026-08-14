@@ -1,0 +1,96 @@
+package config
+
+import (
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+)
+
+// Defaults applied when a setting is absent.
+const (
+	DefaultWebHost  = "0.0.0.0"
+	DefaultWebPort  = 443
+	DefaultDataHost = "0.0.0.0"
+	DefaultDataPort = 3000
+
+	DefaultThemeColor = "#2e7d32"
+	DefaultDarkMode   = true
+	DefaultPaused     = false
+)
+
+// Config carries all runtime configuration resolved from flags and settings.
+type Config struct {
+	DataDir  string // -d, root data folder
+	LogFile  string // -w, optional explicit log file path
+	ExeDir   string // directory of the running binary
+}
+
+// Paths derived from DataDir.
+func (c *Config) DBPath() string      { return filepath.Join(c.DataDir, "talk-mirror.db") }
+func (c *Config) LevelDBPath() string { return filepath.Join(c.DataDir, "leveldb") }
+func (c *Config) CertPath() string    { return filepath.Join(c.DataDir, "cert.pem") }
+func (c *Config) KeyPath() string     { return filepath.Join(c.DataDir, "key.pem") }
+func (c *Config) LogPath() string {
+	if c.LogFile != "" {
+		return c.LogFile
+	}
+	return filepath.Join(c.DataDir, "talk-mirror.log")
+}
+
+// ParseFlags resolves the -d and -w command line flags.
+func ParseFlags() (*Config, error) {
+	dataDir := flag.String("d", "./data", "data directory for sqlite, leveldb, certs and logs")
+	logFile := flag.String("w", "", "log file path (defaults to <data-dir>/talk-mirror.log)")
+	flag.Parse()
+
+	absData, err := filepath.Abs(*dataDir)
+	if err != nil {
+		return nil, fmt.Errorf("resolve data dir: %w", err)
+	}
+	absLog := ""
+	if *logFile != "" {
+		if absLog, err = filepath.Abs(*logFile); err != nil {
+			return nil, fmt.Errorf("resolve log file: %w", err)
+		}
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return nil, fmt.Errorf("resolve executable: %w", err)
+	}
+
+	return &Config{
+		DataDir: absData,
+		LogFile: absLog,
+		ExeDir:  filepath.Dir(exe),
+	}, nil
+}
+
+// Setting keys persisted in sqlite.
+const (
+	KeyWebHost    = "web_host"
+	KeyWebPort    = "web_port"
+	KeyDataHost   = "data_host"
+	KeyDataPort   = "data_port"
+	KeyTLSCert    = "tls_cert"
+	KeyTLSKey     = "tls_key"
+	KeyThemeColor = "theme_color"
+	KeyDarkMode   = "dark_mode"
+	KeyPaused     = "paused"
+)
+
+// DefaultSettings returns the key/value defaults written on first run.
+func DefaultSettings() map[string]string {
+	return map[string]string{
+		KeyWebHost:    DefaultWebHost,
+		KeyWebPort:    strconv.Itoa(DefaultWebPort),
+		KeyDataHost:   DefaultDataHost,
+		KeyDataPort:   strconv.Itoa(DefaultDataPort),
+		KeyTLSCert:    "",
+		KeyTLSKey:     "",
+		KeyThemeColor: DefaultThemeColor,
+		KeyDarkMode:   strconv.FormatBool(DefaultDarkMode),
+		KeyPaused:     strconv.FormatBool(DefaultPaused),
+	}
+}
