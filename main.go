@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log/slog"
-	"net"
 	"os"
 	"os/signal"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 	"github.com/talk-mirror/talk-mirror/internal/ingest"
 	"github.com/talk-mirror/talk-mirror/internal/logger"
 	"github.com/talk-mirror/talk-mirror/internal/server"
+	"github.com/talk-mirror/talk-mirror/internal/service"
 	"github.com/talk-mirror/talk-mirror/internal/session"
 	"github.com/talk-mirror/talk-mirror/internal/state"
 	"github.com/talk-mirror/talk-mirror/internal/store/buffer"
@@ -30,15 +30,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
-		slog.Error("create data dir", "error", err)
+	if service.IsService() {
+		if err := service.Run("talk-mirror", func(ctx context.Context) error {
+			return runApp(ctx, cfg)
+		}); err != nil {
+			slog.Error("service error", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := runApp(ctx, cfg); err != nil {
+		slog.Error("fatal", "error", err)
 		os.Exit(1)
+	}
+}
+
+func runApp(ctx context.Context, cfg *config.Config) error {
+	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
+		return err
 	}
 
 	log, closeLog, err := logger.New(cfg.LogPath())
 	if err != nil {
-		slog.Error("init logger", "error", err)
-		os.Exit(1)
+		return err
 	}
 	defer closeLog()
 
@@ -46,26 +63,22 @@ func main() {
 
 	db, err := sqlite.Open(cfg.DBPath())
 	if err != nil {
-		log.Error("open sqlite", "error", err)
-		os.Exit(1)
+		return err
 	}
 	defer db.Close()
 
 	if err := os.MkdirAll(cfg.LevelDBPath(), 0o755); err != nil {
-		log.Error("create leveldb dir", "error", err)
-		os.Exit(1)
+		return err
 	}
 	ldb, err := leveldb.Open(cfg.LevelDBPath())
 	if err != nil {
-		log.Error("open leveldb", "error", err)
-		os.Exit(1)
+		return err
 	}
 	defer ldb.Close()
 
 	settings, err := db.AllSettings()
 	if err != nil {
-		log.Error("load settings", "error", err)
-		os.Exit(1)
+		return err
 	}
 	for k, v := range config.DefaultSettings() {
 		if _, ok := settings[k]; !ok {
@@ -97,8 +110,7 @@ func main() {
 	}
 	ing := ingest.New(dataHost, dataPort, mgr, gate, log)
 	if err := ing.Start(); err != nil {
-		log.Error("start data listener", "addr", net.JoinHostPort(dataHost, strconv.Itoa(dataPort)), "error", err)
-		os.Exit(1)
+		return err
 	}
 	defer ing.Close()
 
@@ -110,8 +122,7 @@ func main() {
 	}
 	cert, err := tlsutil.EnsureCertificate(certPath, keyPath)
 	if err != nil {
-		log.Error("prepare tls certificate", "error", err)
-		os.Exit(1)
+		return err
 	}
 	log.Info("tls certificate ready", "cert", certPath, "key", keyPath)
 
@@ -133,13 +144,10 @@ func main() {
 		}
 	}()
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
 	go buf.Run(ctx.Done())
 	go mgr.Run(ctx.Done())
 
 	<-ctx.Done()
 	log.Info("shutting down")
-	_ = srv.Close()
+	return srv.Close()
 }

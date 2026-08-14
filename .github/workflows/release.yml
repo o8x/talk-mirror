@@ -9,44 +9,34 @@ on:
 permissions:
   contents: write
 
+env:
+  LDFLAGS: -s -w
+
 jobs:
+  # ---------------------------------------------------------------------------
+  # Portable binaries (single self-contained binary, default data dir ./data).
+  # ---------------------------------------------------------------------------
   build:
     name: build (${{ matrix.goos }}/${{ matrix.goarch }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            goos: linux
-            goarch: amd64
-          - os: ubuntu-latest
-            goos: linux
-            goarch: arm64
-          - os: macos-latest
-            goos: darwin
-            goarch: amd64
-          - os: macos-latest
-            goos: darwin
-            goarch: arm64
-          - os: windows-latest
-            goos: windows
-            goarch: amd64
-          - os: windows-latest
-            goos: windows
-            goarch: arm64
-
+          - { goos: linux,   goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: darwin,  goarch: arm64 }
+          - { goos: windows, goarch: amd64 }
+          - { goos: windows, goarch: arm64 }
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
@@ -58,8 +48,7 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
 
@@ -69,11 +58,225 @@ jobs:
           EXT=""
           if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
           CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-            go build -trimpath -ldflags "-s -w" -o "talk-mirror${EXT}" .
+            go build -trimpath -ldflags "$LDFLAGS" -o "talk-mirror-${EXT}" .
           echo "BIN=talk-mirror${EXT}" >> "$GITHUB_ENV"
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talk-mirror-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ env.BIN }}
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Linux packages: .deb, .rpm (systemd) and .run (self-extracting).
+  # ---------------------------------------------------------------------------
+  linux:
+    name: package (linux)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ amd64, arm64 ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: views/pnpm-lock.yaml
+
+      - name: Build frontend
+        run: |
+          cd views
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=0.0.0-$(date +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build backend (systemd default data dir)
+        shell: bash
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} go build -trimpath \
+            -ldflags "$LDFLAGS -X github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror" \
+            -o talk-mirror .
+
+      - name: Install nfpm
+        shell: bash
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Package deb / rpm
+        shell: bash
+        run: bash packaging/linux/package.sh "$PWD/talk-mirror" "$VERSION" "${{ matrix.arch }}" dist
+
+      - name: Package .run
+        shell: bash
+        run: bash packaging/linux/make_run.sh "$PWD/talk-mirror" "$VERSION" "${{ matrix.arch }}" dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talk-mirror-linux-${{ matrix.arch }}-packages
+          path: dist/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # macOS package: .pkg (launchd / brew service).
+  # ---------------------------------------------------------------------------
+  macos:
+    name: package (macos)
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ amd64, arm64 ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: views/pnpm-lock.yaml
+
+      - name: Build frontend
+        run: |
+          cd views
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=0.0.0-$(date +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build backend (launchd default data dir)
+        shell: bash
+        run: |
+          CGO_ENABLED=0 GOOS=darwin GOARCH=${{ matrix.arch }} go build -trimpath \
+            -ldflags "$LDFLAGS -X github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=/usr/local/var/talk-mirror" \
+            -o talk-mirror .
+
+      - name: Package pkg
+        shell: bash
+        run: bash packaging/macos/package.sh "$PWD/talk-mirror" "$VERSION" "${{ matrix.arch }}" dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talk-mirror-macos-${{ matrix.arch }}-pkg
+          path: dist/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Windows package: NSIS installer (registered as a Windows service).
+  # ---------------------------------------------------------------------------
+  windows:
+    name: package (windows)
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ amd64, arm64 ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: views/pnpm-lock.yaml
+
+      - name: Build frontend
+        run: |
+          cd views
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=0.0.0-$(date +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build backend (service default data dir)
+        shell: bash
+        run: |
+          CGO_ENABLED=0 GOOS=windows GOARCH=${{ matrix.arch }} go build -trimpath \
+            -ldflags "$LDFLAGS -X github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=C:\\ProgramData\\Talk-mirror" \
+            -o talk-mirror.exe .
+
+      - name: Install NSIS
+        shell: powershell
+        run: choco install nsis -y
+
+      - name: Build installer
+        shell: powershell
+        run: |
+          $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          & $nsis /DVERSION=$env:VERSION /DARCH=${{ matrix.arch }} packaging\windows\talk-mirror.nsi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talk-mirror-windows-${{ matrix.arch }}-installer
+          path: talk-mirror-*-setup.exe
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Publish everything as a GitHub Release.
+  # ---------------------------------------------------------------------------
+  release:
+    name: publish release
+    needs: [ build, linux, macos, windows ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: ${{ env.BIN }}
+          files: artifacts/**

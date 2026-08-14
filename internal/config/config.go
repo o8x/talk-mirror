@@ -20,6 +20,11 @@ const (
 	DefaultPaused     = false
 )
 
+// DefaultDataDir is the fallback value of the -d flag. Packaged builds override
+// it at link time, e.g. -ldflags "-X
+// github.com/talk-mirror/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror".
+var DefaultDataDir = "./data"
+
 // Config carries all runtime configuration resolved from flags and settings.
 type Config struct {
 	DataDir string // -d, root data folder
@@ -41,7 +46,7 @@ func (c *Config) LogPath() string {
 
 // ParseFlags resolves the -d and -w command line flags.
 func ParseFlags() (*Config, error) {
-	dataDir := flag.String("d", "./data", "data directory for sqlite, leveldb, certs and logs")
+	dataDir := flag.String("d", DefaultDataDir, "data directory for sqlite, leveldb, certs and logs")
 	logFile := flag.String("w", "", "log file path (defaults to <data-dir>/talk-mirror.log)")
 	flag.Parse()
 

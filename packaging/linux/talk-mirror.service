@@ -1,0 +1,22 @@
+[Unit]
+Description=Talk-mirror remote debugger
+Documentation=https://github.com/talk-mirror/talk-mirror
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=talk-mirror
+Group=talk-mirror
+ExecStart=/usr/bin/talk-mirror -d /var/lib/talk-mirror
+Restart=on-failure
+RestartSec=2
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/talk-mirror
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

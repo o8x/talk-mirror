@@ -1,0 +1,33 @@
+name: talk-mirror
+arch: __ARCH__
+platform: linux
+version: __VERSION__
+section: utils
+priority: optional
+maintainer: Talk-mirror contributors
+description: Talk-mirror remote debugger (self-contained single binary)
+homepage: https://github.com/talk-mirror/talk-mirror
+license: MIT
+vendor: Talk-mirror
+
+contents:
+  - src: __BINARY__
+    dst: /usr/bin/talk-mirror
+    file_info:
+      mode: 0755
+  - src: packaging/linux/talk-mirror.service
+    dst: /etc/systemd/system/talk-mirror.service
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: packaging/linux/postinstall.sh
+  preremove: packaging/linux/preremove.sh
+
+overrides:
+  deb:
+    depends:
+      - systemd
+  rpm:
+    recommends:
+      - systemd

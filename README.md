@@ -54,8 +54,61 @@ Then open `https://127.0.0.1:443` (accept the self-signed certificate on first r
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-d` | `./data` | Data directory for SQLite, LevelDB, certificates and logs (auto-created). |
+| `-d` | *(platform-specific, see below)* | Data directory for SQLite, LevelDB, certificates and logs (auto-created). |
 | `-w` | *(data dir)* | Log file path; defaults to `<data-dir>/talk-mirror.log`. |
+
+The default data directory is baked in at packaging time:
+
+| Build | Default data directory |
+|-------|------------------------|
+| Portable binary | `./data` (relative to the working directory) |
+| Linux package | `/var/lib/talk-mirror` |
+| macOS package | `/usr/local/var/talk-mirror` |
+| Windows installer | `%ProgramData%\Talk-mirror` |
+
+## Installation (packaged)
+
+Each GitHub Release ships native packages in addition to portable binaries.
+
+### Linux
+
+| Format | Install | Manage |
+|--------|---------|--------|
+| `.deb` | `sudo apt install ./talk-mirror_<v>_amd64.deb` | `systemctl status talk-mirror` |
+| `.rpm` | `sudo dnf install ./talk-mirror-<v>-amd64.rpm` | `systemctl status talk-mirror` |
+| `.run` | `sudo bash talk-mirror-<v>-amd64.run` | `systemctl status talk-mirror` |
+
+The service runs as a dedicated `talk-mirror` system user with
+`CAP_NET_BIND_SERVICE` (so it can bind port 443) and stores data in
+`/var/lib/talk-mirror`.
+
+### macOS
+
+```bash
+sudo installer -pkg talk-mirror-<v>-arm64.pkg -target /
+```
+
+Installs `/usr/local/bin/talk-mirror` and a LaunchDaemon
+(`com.talk-mirror`) that starts on boot. Manage it with `launchctl` (or
+`brew services` once registered):
+
+```bash
+launchctl list com.talk-mirror
+sudo launchctl bootout system/com.talk-mirror
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.talk-mirror.plist
+```
+
+### Windows
+
+Run `talk-mirror-<v>-amd64-setup.exe`. The installer registers the binary as the
+Windows service `TalkMirror` (auto-start) and stores data in
+`%ProgramData%\Talk-mirror`. Manage it with:
+
+```powershell
+sc.exe query TalkMirror
+sc.exe stop TalkMirror
+sc.exe start TalkMirror
+```
 
 ## Data format
 
@@ -155,6 +208,7 @@ The LevelDB directory and SQLite file locations are shown read-only (they live u
 │   ├── logger/             # slog setup (console + file)
 │   ├── model/              # shared entities
 │   ├── server/             # TLS HTTP server + SPA serving
+│   ├── service/            # OS service integration (Windows SCM)
 │   ├── session/            # client/session registry
 │   ├── state/              # pause gate
 │   ├── store/
@@ -162,6 +216,10 @@ The LevelDB directory and SQLite file locations are shown read-only (they live u
 │   │   ├── leveldb/        # message archive
 │   │   └── sqlite/         # metadata & settings
 │   └── tlsutil/            # self-signed certificate generation
+├── packaging/
+│   ├── linux/              # systemd unit + nfpm (deb/rpm) + .run builder
+│   ├── macos/              # launchd plist + pkgbuilder script
+│   └── windows/            # NSIS installer script
 └── views/                  # React + MUI + ECharts frontend (pnpm)
 ```
 
