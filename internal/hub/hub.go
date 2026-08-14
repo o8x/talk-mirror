@@ -26,9 +26,9 @@ type Event struct {
 
 // Hub tracks connected browser clients and broadcasts events.
 type Hub struct {
-	mu      sync.RWMutex
-	clients map[*client]struct{}
-	log     *slog.Logger
+	mu       sync.RWMutex
+	clients  map[*client]struct{}
+	log      *slog.Logger
 	upgrader websocket.Upgrader
 }
 
@@ -159,9 +159,9 @@ func (c *client) readPump() {
 			return
 		}
 		var req struct {
-			Type          string `json:"type"`
-			SessionID     string `json:"session_id"`
-			ConnectionID  string `json:"connection_id"`
+			Type         string `json:"type"`
+			SessionID    string `json:"session_id"`
+			ConnectionID string `json:"connection_id"`
 		}
 		if json.Unmarshal(msg, &req) != nil {
 			continue

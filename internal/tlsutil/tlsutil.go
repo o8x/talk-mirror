@@ -42,15 +42,15 @@ func generate(certPath, keyPath string) error {
 
 	now := time.Now()
 	tmpl := x509.Certificate{
-		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: "talk-mirror", Organization: []string{"Talk-mirror"}},
-		NotBefore:    now.Add(-time.Hour),
-		NotAfter:     now.AddDate(3, 0, 0),
-		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
-		DNSNames:     []string{"localhost"},
-		IsCA:         true,
+		SerialNumber:          serial,
+		Subject:               pkix.Name{CommonName: "talk-mirror", Organization: []string{"Talk-mirror"}},
+		NotBefore:             now.Add(-time.Hour),
+		NotAfter:              now.AddDate(3, 0, 0),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
+		DNSNames:              []string{"localhost"},
+		IsCA:                  true,
 		BasicConstraintsValid: true,
 	}
 

@@ -22,9 +22,9 @@ const (
 
 // Config carries all runtime configuration resolved from flags and settings.
 type Config struct {
-	DataDir  string // -d, root data folder
-	LogFile  string // -w, optional explicit log file path
-	ExeDir   string // directory of the running binary
+	DataDir string // -d, root data folder
+	LogFile string // -w, optional explicit log file path
+	ExeDir  string // directory of the running binary
 }
 
 // Paths derived from DataDir.

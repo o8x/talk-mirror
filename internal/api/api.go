@@ -57,13 +57,13 @@ func writeErr(w http.ResponseWriter, status int, msg string) {
 // --- stats ---
 
 type overviewResponse struct {
-	TotalMessages     int64          `json:"total_messages"`
-	QPS               float64        `json:"qps"`
-	ActiveConnections int            `json:"active_connections"`
-	ActiveSessions    int            `json:"active_sessions"`
-	TotalConnections  int            `json:"total_connections"`
-	TotalSessions     int            `json:"total_sessions"`
-	Buckets           []bucketPoint  `json:"buckets"`
+	TotalMessages     int64         `json:"total_messages"`
+	QPS               float64       `json:"qps"`
+	ActiveConnections int           `json:"active_connections"`
+	ActiveSessions    int           `json:"active_sessions"`
+	TotalConnections  int           `json:"total_connections"`
+	TotalSessions     int           `json:"total_sessions"`
+	Buckets           []bucketPoint `json:"buckets"`
 }
 
 type bucketPoint struct {
@@ -195,8 +195,8 @@ func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 // --- messages ---
 
 type messagesResponse struct {
-	Total int64           `json:"total"`
-	Items []model.Record  `json:"items"`
+	Total int64          `json:"total"`
+	Items []model.Record `json:"items"`
 }
 
 func (h *Handler) sessionMessages(w http.ResponseWriter, r *http.Request) {

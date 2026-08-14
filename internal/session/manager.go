@@ -36,7 +36,7 @@ type Manager struct {
 	buf       *buffer.Buffer
 	hub       *hub.Hub
 	log       *slog.Logger
-	clients   map[string]*ClientState // by IP
+	clients   map[string]*ClientState  // by IP
 	sessions  map[string]*SessionState // by session ID
 	clientIDs map[string]string        // IP -> client ID
 	keyIndex  map[string]string        // "ip|port|protocol" -> session ID
