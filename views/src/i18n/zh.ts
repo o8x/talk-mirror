@@ -27,6 +27,7 @@ export const zh: Dict = {
   'common.localMachine': '本机',
   'common.logout': '退出登录',
   'common.noData': '暂无数据',
+  'common.cancel': '取消',
 
   'pause.banner': '系统已暂停，当前不接收任何数据。',
 
@@ -55,6 +56,12 @@ export const zh: Dict = {
   'sessions.columns': '列',
   'sessions.noMessages': '暂无消息。',
   'sessions.detail': '详情',
+  'sessions.advancedSearch': '高级搜索',
+  'sessions.keyword': '关键词',
+  'sessions.tagFilter': '标签',
+  'sessions.dataKey': '数据键',
+  'sessions.dataValue': '数据值',
+  'sessions.reset': '重置',
 
   'connections.globalActivity': '全局活动',
   'connections.connections': '连接',
@@ -70,6 +77,9 @@ export const zh: Dict = {
   'connections.delete': '删除',
   'connections.deleteConnectionConfirm': '删除该连接及其所有会话和消息？',
   'connections.deleteSessionConfirm': '删除该会话及其所有消息？',
+  'connections.export': '导出',
+  'connections.exportJson': '导出 JSON',
+  'connections.exportCsv': '导出 CSV',
 
   'access.description':
     '复制可直接运行的客户端代码。所有示例仅使用各语言标准库，以 |2字节长度|json| 的帧格式推送到数据端口（默认 3000）。',
@@ -106,6 +116,7 @@ export const zh: Dict = {
   'settings.appearance': '外观',
   'settings.themeColor': '主题色',
   'settings.darkMode': '深色模式',
+  'settings.trendPoints': '趋势图点数',
   'settings.storage': '存储（只读）',
   'settings.sqliteFile': 'SQLite 文件',
   'settings.leveldbDir': 'LevelDB 目录',

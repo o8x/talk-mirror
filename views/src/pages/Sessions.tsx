@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { useSearchParams } from 'react-router-dom'
 import {
   Box,
+  Button,
   Card,
   Chip,
   Collapse,
@@ -24,22 +25,37 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
+import SearchIcon from '@mui/icons-material/Search'
 import ViewColumnIcon from '@mui/icons-material/ViewColumn'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import TrendChart from '../components/TrendChart'
 import { getConnections, getMessages, getSessions, getSessionBuckets } from '../api/client'
 import { ws } from '../api/ws'
-import { formatTime, nowNano } from '../utils'
+import { formatTime, nowNano, tagColor } from '../utils'
 import { useT } from '../i18n'
 import { useStore } from '../store/store'
 import type { BucketPoint, Connection, MessageEvent, Session } from '../types'
 
 const MAX_LIVE = 10000
+
+interface Filters {
+  q: string
+  tag: string
+  dataKey: string
+  dataValue: string
+}
+
+const EMPTY_FILTERS: Filters = { q: '', tag: '', dataKey: '', dataValue: '' }
+
+function hasFilters(f: Filters): boolean {
+  return !!(f.q || f.tag || f.dataKey || f.dataValue)
+}
 
 type ColumnKey = 'seq' | 'time' | 'ip' | 'port' | 'tag' | 'message' | 'data'
 const ALL_COLUMNS: ColumnKey[] = ['seq', 'time', 'ip', 'port', 'tag', 'message', 'data']
@@ -98,6 +114,9 @@ export default function Sessions() {
   const [trendData, setTrendData] = useState<BucketPoint[]>([])
   const [order, setOrder] = useState<ColumnKey[]>(loadOrder)
   const [colAnchor, setColAnchor] = useState<HTMLElement | null>(null)
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS)
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
 
   const columnLabel: Record<ColumnKey, string> = useMemo(
     () => ({
@@ -168,7 +187,7 @@ export default function Sessions() {
     ws.subscribe(selSession, '')
   }, [selSession])
 
-  // fetch table data when selection or range or pagination changes
+  // fetch table data when selection, range, pagination or filters change
   useEffect(() => {
     let alive = true
     if (!selSession) {
@@ -176,10 +195,16 @@ export default function Sessions() {
       setTotal(0)
       return
     }
+    const filterOpts = {
+      q: filters.q || undefined,
+      tag: filters.tag || undefined,
+      dataKey: filters.dataKey || undefined,
+      dataValue: filters.dataValue || undefined,
+    }
     if (rangeSeconds > 0) {
       const end = nowNano()
       const start = end - rangeSeconds * 1e9
-      getMessages(selSession, { start, end, limit: pageSize, offset: page * pageSize })
+      getMessages(selSession, { ...filterOpts, start, end, limit: pageSize, offset: page * pageSize })
         .then((res) => {
           if (!alive) return
           setTotal(res.total)
@@ -187,7 +212,7 @@ export default function Sessions() {
         })
         .catch(() => {})
     } else {
-      getMessages(selSession, { limit: 500 })
+      getMessages(selSession, { ...filterOpts, limit: 500 })
         .then((res) => {
           if (!alive) return
           setTotal(res.total)
@@ -198,7 +223,7 @@ export default function Sessions() {
     return () => {
       alive = false
     }
-  }, [selSession, rangeSeconds, page, pageSize])
+  }, [selSession, rangeSeconds, page, pageSize, filters])
 
   // fetch trend buckets from the backend (full history, not just the in-memory list)
   useEffect(() => {
@@ -217,7 +242,13 @@ export default function Sessions() {
   useEffect(() => {
     if (!selSession || rangeSeconds > 0) return
     const timer = window.setInterval(() => {
-      getMessages(selSession, { limit: 500 })
+      getMessages(selSession, {
+        q: filters.q || undefined,
+        tag: filters.tag || undefined,
+        dataKey: filters.dataKey || undefined,
+        dataValue: filters.dataValue || undefined,
+        limit: 500,
+      })
         .then((res) => {
           setTotal(res.total)
           setMessages(res.items)
@@ -228,7 +259,7 @@ export default function Sessions() {
         .catch(() => {})
     }, 1000)
     return () => window.clearInterval(timer)
-  }, [selSession, rangeSeconds])
+  }, [selSession, rangeSeconds, filters])
 
   // realtime push
   useEffect(() => {
@@ -236,12 +267,13 @@ export default function Sessions() {
       if (ev.type !== 'message') return
       const m = ev.data as MessageEvent
       if (rangeSeconds > 0) return
+      if (hasFilters(filters)) return
       if (selSession && m.session_id !== selSession) return
       setMessages((prev) => [m, ...prev].slice(0, MAX_LIVE))
       setTotal((n) => n + 1)
     })
     return off
-  }, [selSession, rangeSeconds])
+  }, [selSession, rangeSeconds, filters])
 
   const filteredSessions = useMemo(() => {
     if (!selConn) return sessions
@@ -258,14 +290,23 @@ export default function Sessions() {
     (startNs: number, endNs: number) => {
       if (!selSession) return
       setPage(0)
-      getMessages(selSession, { start: startNs, end: endNs, limit: pageSize, offset: 0 })
+      getMessages(selSession, {
+        q: filters.q || undefined,
+        tag: filters.tag || undefined,
+        dataKey: filters.dataKey || undefined,
+        dataValue: filters.dataValue || undefined,
+        start: startNs,
+        end: endNs,
+        limit: pageSize,
+        offset: 0,
+      })
         .then((res) => {
           setTotal(res.total)
           setMessages(res.items)
         })
         .catch(() => {})
     },
-    [selSession, pageSize],
+    [selSession, pageSize, filters],
   )
 
   const renderCell = (key: ColumnKey, m: MessageEvent): ReactNode => {
@@ -291,7 +332,17 @@ export default function Sessions() {
         return <span style={{ fontFamily: 'monospace' }}>{m.port}</span>
       case 'tag':
         return (m.tag ?? []).map((tag) => (
-          <Chip key={tag} label={tag} size="small" variant="outlined" sx={{ mr: 0.5 }} />
+          <Chip
+            key={tag}
+            label={tag}
+            size="small"
+            sx={{
+              mr: 0.5,
+              backgroundColor: tagColor(tag),
+              color: '#fff',
+              fontWeight: 500,
+            }}
+          />
         ))
       case 'message':
         return m.message
@@ -395,10 +446,73 @@ export default function Sessions() {
             />
           ))}
         </Stack>
+        <IconButton
+          size="small"
+          onClick={() => setFilterOpen((v) => !v)}
+          title={t('sessions.advancedSearch')}
+          color={hasFilters(filters) ? 'primary' : 'default'}
+        >
+          <SearchIcon fontSize="small" />
+        </IconButton>
         <IconButton size="small" onClick={(e) => setColAnchor(e.currentTarget)} title={t('sessions.columns')}>
           <ViewColumnIcon fontSize="small" />
         </IconButton>
       </Stack>
+
+      <Collapse in={filterOpen}>
+        <Card sx={{ p: 2, mb: 2 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
+            <TextField
+              size="small"
+              label={t('sessions.keyword')}
+              value={draft.q}
+              onChange={(e) => setDraft((d) => ({ ...d, q: e.target.value }))}
+              sx={{ minWidth: 200 }}
+            />
+            <TextField
+              size="small"
+              label={t('sessions.tagFilter')}
+              value={draft.tag}
+              onChange={(e) => setDraft((d) => ({ ...d, tag: e.target.value }))}
+              sx={{ minWidth: 140 }}
+            />
+            <TextField
+              size="small"
+              label={t('sessions.dataKey')}
+              value={draft.dataKey}
+              onChange={(e) => setDraft((d) => ({ ...d, dataKey: e.target.value }))}
+              sx={{ minWidth: 140 }}
+            />
+            <TextField
+              size="small"
+              label={t('sessions.dataValue')}
+              value={draft.dataValue}
+              onChange={(e) => setDraft((d) => ({ ...d, dataValue: e.target.value }))}
+              sx={{ minWidth: 140 }}
+            />
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => {
+                setFilters(draft)
+                setPage(0)
+              }}
+            >
+              {t('common.apply')}
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                setDraft(EMPTY_FILTERS)
+                setFilters(EMPTY_FILTERS)
+                setPage(0)
+              }}
+            >
+              {t('sessions.reset')}
+            </Button>
+          </Stack>
+        </Card>
+      </Collapse>
 
       <Popover
         open={!!colAnchor}

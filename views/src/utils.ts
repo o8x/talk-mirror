@@ -20,3 +20,15 @@ export function formatQps(n: number): string {
 export function nowNano(): number {
   return Date.now() * 1e6
 }
+
+// tagColor returns a stable color derived from the tag text hash, so the same
+// tag always renders with the same color.
+export function tagColor(text: string): string {
+  let h = 2166136261
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  const hue = ((h >>> 0) % 360 + 360) % 360
+  return `hsl(${hue}, 60%, 42%)`
+}

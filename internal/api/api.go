@@ -2,10 +2,13 @@ package api
 
 import (
 	"crypto/subtle"
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,6 +47,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/connections/{id}", h.deleteConnection)
 	mux.HandleFunc("GET /api/sessions", h.listSessions)
 	mux.HandleFunc("GET /api/sessions/{id}/messages", h.sessionMessages)
+	mux.HandleFunc("GET /api/sessions/{id}/export", h.exportSession)
 	mux.HandleFunc("GET /api/sessions/{id}/buckets", h.sessionBuckets)
 	mux.HandleFunc("DELETE /api/sessions/{id}", h.deleteSession)
 	mux.HandleFunc("GET /api/settings", h.getSettings)
@@ -149,22 +153,54 @@ type bucketPoint struct {
 }
 
 // fillBuckets returns a fixed sequence of bucket points ending at the aligned
-// end time, filling empty buckets with a count of zero. It yields up to 300
-// points (one per bucket) covering the requested range.
-func fillBuckets(buckets map[int64]int64, start, end, bucketSize int64) []bucketPoint {
+// end time, filling empty buckets with a count of zero. It yields up to
+// `points` points (one per bucket) covering the requested range.
+func fillBuckets(buckets map[int64]int64, start, end, bucketSize int64, points int) []bucketPoint {
 	if bucketSize <= 0 {
 		bucketSize = int64(time.Second)
 	}
+	if points <= 0 {
+		points = config.DefaultTrendPoints
+	}
 	endAligned := (end / bucketSize) * bucketSize
-	first := endAligned - 299*bucketSize
+	first := endAligned - int64(points-1)*bucketSize
 	if first < start {
 		first = start
 	}
-	points := make([]bucketPoint, 0, 300)
+	out := make([]bucketPoint, 0, points)
 	for ts := first; ts <= endAligned; ts += bucketSize {
-		points = append(points, bucketPoint{TS: ts, Count: buckets[ts]})
+		out = append(out, bucketPoint{TS: ts, Count: buckets[ts]})
 	}
-	return points
+	return out
+}
+
+// trendPoints returns the configured trend point count, falling back to the
+// default of 300.
+func (h *Handler) trendPoints() int {
+	v, err := h.db.GetSetting(config.KeyTrendPoints)
+	if err != nil || v == "" {
+		return config.DefaultTrendPoints
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return config.DefaultTrendPoints
+	}
+	if n > 5000 {
+		n = 5000
+	}
+	return n
+}
+
+// requestedPoints returns the trend point count, preferring an explicit
+// `points` query parameter over the configured setting.
+func (h *Handler) requestedPoints(q url.Values) int {
+	n := h.trendPoints()
+	if v := q.Get("points"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			n = p
+		}
+	}
+	return n
 }
 
 func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
@@ -187,8 +223,9 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 			end = n
 		}
 	}
-	bucketSize := (end - start) / 300
-	if bucketSize < int64(time.Second) {
+	points := h.requestedPoints(q)
+	bucketSize := (end - start) / int64(points)
+	if bucketSize <= 0 {
 		bucketSize = int64(time.Second)
 	}
 	if v := q.Get("bucket"); v != "" {
@@ -198,11 +235,15 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	buckets, _ := h.buf.Buckets(start, end, bucketSize)
-	points := fillBuckets(buckets, start, end, bucketSize)
+	filled := fillBuckets(buckets, start, end, bucketSize, points)
 
 	qps := 0.0
-	if n, ok := buckets[(now/int64(time.Second))*int64(time.Second)]; ok {
-		qps = float64(n)
+	// qps is the message count in the current second, queried independently of
+	// the (possibly sub-second) trend bucket size.
+	if qb, err := h.buf.Buckets(now-5*int64(time.Second), now, int64(time.Second)); err == nil {
+		if n, ok := qb[(now/int64(time.Second))*int64(time.Second)]; ok {
+			qps = float64(n)
+		}
 	}
 
 	conns, sess := h.mgr.ActiveCounts()
@@ -217,7 +258,7 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 		ActiveSessions:    sess,
 		TotalConnections:  len(totalClients),
 		TotalSessions:     len(totalSessionsList),
-		Buckets:           points,
+		Buckets:           filled,
 	})
 }
 
@@ -397,14 +438,16 @@ func (h *Handler) sessionMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	total, _ := h.buf.Count(id, start, end)
 	records, err := h.buf.Query(id, start, end)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	records = filterRecords(records, q.Get("tag"), q.Get("data_key"), q.Get("data_value"), q.Get("q"))
+
 	sort.Slice(records, func(i, j int) bool { return records[i].TimeNano > records[j].TimeNano })
 
+	total := int64(len(records))
 	slice := records
 	if offset < len(records) {
 		hi := offset + limit
@@ -425,6 +468,136 @@ func (h *Handler) sessionMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, messagesResponse{Total: total, Items: items})
+}
+
+// filterRecords applies tag / data key-value / keyword filters to a record
+// list in place, preserving the original slice backing array.
+func filterRecords(records []model.Record, tag, dataKey, dataValue, keyword string) []model.Record {
+	if tag == "" && dataKey == "" && keyword == "" {
+		return records
+	}
+	kw := strings.ToLower(strings.TrimSpace(keyword))
+	out := records[:0]
+	for _, r := range records {
+		if tag != "" && !matchTag(r.Tag, tag) {
+			continue
+		}
+		if dataKey != "" && !matchData(r.Data, dataKey, dataValue) {
+			continue
+		}
+		if kw != "" && !matchKeyword(r, kw) {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
+func matchTag(tags []string, tag string) bool {
+	for _, t := range tags {
+		if strings.EqualFold(t, tag) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchData reports whether the record's data object contains the key (and,
+// when value is non-empty, that its value stringifies to value).
+func matchData(data json.RawMessage, key, value string) bool {
+	var obj map[string]any
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return false
+	}
+	v, ok := obj[key]
+	if !ok {
+		return false
+	}
+	if value == "" {
+		return true
+	}
+	return strings.EqualFold(fmt.Sprint(v), value)
+}
+
+func matchKeyword(r model.Record, kw string) bool {
+	if strings.Contains(strings.ToLower(r.Message), kw) {
+		return true
+	}
+	for _, t := range r.Tag {
+		if strings.Contains(strings.ToLower(t), kw) {
+			return true
+		}
+	}
+	return strings.Contains(strings.ToLower(string(r.Data)), kw)
+}
+
+type sessionExport struct {
+	Session  model.Session          `json:"session"`
+	Messages []session.MessageEvent `json:"messages"`
+}
+
+// exportSession streams a session and all of its messages as JSON or CSV for
+// download.
+func (h *Handler) exportSession(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	sess := h.mgr.SessionByID(id)
+	if sess == nil {
+		if ps, err := h.db.SessionByID(id); err == nil && ps != nil {
+			sess = ps
+		}
+	}
+	if sess == nil {
+		writeErr(w, http.StatusNotFound, "session not found")
+		return
+	}
+	records, err := h.buf.Query(id, 0, 0)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	sort.Slice(records, func(i, j int) bool { return records[i].TimeNano < records[j].TimeNano })
+
+	messages := make([]session.MessageEvent, 0, len(records))
+	for _, rec := range records {
+		messages = append(messages, session.MessageEvent{
+			Record:   rec,
+			IP:       sess.IP,
+			Port:     sess.Port,
+			Protocol: sess.Protocol,
+		})
+	}
+
+	base := "session-" + id
+	if strings.EqualFold(r.URL.Query().Get("format"), "csv") {
+		writeSessionCSV(w, base, messages)
+		return
+	}
+	w.Header().Set("Content-Disposition", `attachment; filename="`+base+`.json"`)
+	writeJSON(w, http.StatusOK, sessionExport{Session: *sess, Messages: messages})
+}
+
+func writeSessionCSV(w http.ResponseWriter, base string, messages []session.MessageEvent) {
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+base+`.csv"`)
+	cw := csv.NewWriter(w)
+	_ = cw.Write([]string{"seq", "session_id", "time_nano", "received_at", "tag", "message", "data", "ip", "port", "protocol"})
+	for _, m := range messages {
+		tagJSON, _ := json.Marshal(m.Tag)
+		dataJSON, _ := json.Marshal(m.Data)
+		_ = cw.Write([]string{
+			strconv.FormatInt(m.Seq, 10),
+			m.SessionID,
+			strconv.FormatInt(m.TimeNano, 10),
+			strconv.FormatInt(m.ReceivedAt, 10),
+			string(tagJSON),
+			m.Message,
+			string(dataJSON),
+			m.IP,
+			strconv.Itoa(m.Port),
+			m.Protocol,
+		})
+	}
+	cw.Flush()
 }
 
 // sessionBuckets returns per-bucket message counts for a session.
@@ -456,8 +629,9 @@ func (h *Handler) sessionBuckets(w http.ResponseWriter, r *http.Request) {
 			end = n
 		}
 	}
-	bucketSize := (end - start) / 300
-	if bucketSize < int64(time.Second) {
+	points := h.requestedPoints(q)
+	bucketSize := (end - start) / int64(points)
+	if bucketSize <= 0 {
 		bucketSize = int64(time.Second)
 	}
 	if v := q.Get("bucket"); v != "" {
@@ -471,8 +645,8 @@ func (h *Handler) sessionBuckets(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	points := fillBuckets(buckets, start, end, bucketSize)
-	writeJSON(w, http.StatusOK, points)
+	filled := fillBuckets(buckets, start, end, bucketSize, points)
+	writeJSON(w, http.StatusOK, filled)
 }
 
 // --- settings ---

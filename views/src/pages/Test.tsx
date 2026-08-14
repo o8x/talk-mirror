@@ -128,6 +128,57 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
   ].join('\n')
 }
 
+function genCpp(address: string, talkPort: string, message: string, data: Record<string, string>): string {
+  const port = parseInt(talkPort, 10) || 3000
+  const entries = Object.entries(data)
+  const dataStr = entries.length
+    ? '{' + entries.map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(',') + '}'
+    : '{}'
+  const cppLit = (s: string) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+  const msgLit = cppLit(JSON.stringify(message))
+  const dataLit = cppLit(dataStr)
+  return [
+    '// C++17 (stdlib only) - TalkMirror test client',
+    '#include <arpa/inet.h>',
+    '#include <netinet/in.h>',
+    '#include <sys/socket.h>',
+    '#include <unistd.h>',
+    '',
+    '#include <chrono>',
+    '#include <cstdint>',
+    '#include <string>',
+    '',
+    'int main() {',
+    '    int sock = socket(AF_INET, SOCK_STREAM, 0);',
+    '    sockaddr_in addr{};',
+    '    addr.sin_family = AF_INET;',
+    `    addr.sin_port = htons(${port});`,
+    `    inet_pton(AF_INET, ${JSON.stringify(address)}, &addr.sin_addr);`,
+    '    connect(sock, (sockaddr*)&addr, sizeof(addr));',
+    '',
+    '    auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(',
+    '        std::chrono::system_clock::now().time_since_epoch()).count();',
+    '',
+    '    std::string json = "{";',
+    '    json += "\\"time_nano\\":" + std::to_string(now);',
+    '    json += ",\\"tag\\":[\\"test\\"]";',
+    '    json += ",\\"message\\":";',
+    `    json += ${msgLit};`,
+    '    json += ",\\"data\\":";',
+    `    json += ${dataLit};`,
+    '    json += "}";',
+    '',
+    '    uint16_t len = htons((uint16_t)json.size());',
+    '    send(sock, &len, 2, 0);',
+    '    send(sock, json.data(), json.size(), 0);',
+    '',
+    '    close(sock);',
+    '    return 0;',
+    '}',
+    '',
+  ].join('\n')
+}
+
 export default function Test() {
   const t = useT()
   const darkMode = useStore((s) => s.darkMode)
@@ -141,7 +192,7 @@ export default function Test() {
   )
   const [result, setResult] = useState<Result | null>(null)
   const [running, setRunning] = useState(false)
-  const [lang, setLang] = useState<'go' | 'python'>('go')
+  const [lang, setLang] = useState<'go' | 'python' | 'cpp'>('go')
   const apiPort = window.location.port || '443'
 
   useEffect(() => {
@@ -166,10 +217,11 @@ export default function Test() {
 
   const preview = useMemo(() => JSON.stringify({ tag: TAG, message, data }, null, 2), [message, data])
 
-  const generated = useMemo(
-    () => (lang === 'go' ? genGo(address, talkPort, message, data) : genPython(address, talkPort, message, data)),
-    [lang, address, talkPort, message, data],
-  )
+  const generated = useMemo(() => {
+    if (lang === 'go') return genGo(address, talkPort, message, data)
+    if (lang === 'cpp') return genCpp(address, talkPort, message, data)
+    return genPython(address, talkPort, message, data)
+  }, [lang, address, talkPort, message, data])
 
   const run = async () => {
     setRunning(true)
@@ -333,6 +385,7 @@ export default function Test() {
               <Tabs value={lang} onChange={(_, v) => setLang(v)}>
                 <Tab label="Go" value="go" />
                 <Tab label="Python" value="python" />
+                <Tab label="C++" value="cpp" />
               </Tabs>
             </Box>
             <CodeBlock code={generated} language={lang} title="" />

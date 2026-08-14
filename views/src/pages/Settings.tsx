@@ -24,6 +24,7 @@ interface FormState {
   tls_key: string
   theme_color: string
   auth_key: string
+  trend_points: string
 }
 
 export default function Settings() {
@@ -40,6 +41,7 @@ export default function Settings() {
     tls_key: '',
     theme_color: '#c62828',
     auth_key: '',
+    trend_points: '300',
   })
   const [readonly, setReadonly] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
@@ -56,6 +58,7 @@ export default function Settings() {
           tls_key: s.tls_key ?? '',
           theme_color: s.theme_color ?? '#c62828',
           auth_key: s.auth_key ?? '',
+          trend_points: s.trend_points ?? '300',
         })
         setReadonly({ leveldb_dir: s.leveldb_dir ?? '', sqlite_file: s.sqlite_file ?? '' })
       })
@@ -219,6 +222,18 @@ export default function Settings() {
                 />
               }
               label={t('settings.darkMode')}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              label={t('settings.trendPoints')}
+              value={form.trend_points}
+              onChange={set('trend_points')}
+              inputProps={{ min: 1, max: 5000 }}
+              InputLabelProps={shrink}
             />
           </Grid>
         </Grid>

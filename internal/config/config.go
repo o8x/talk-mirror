@@ -19,6 +19,8 @@ const (
 	DefaultDarkMode   = false
 	DefaultPaused     = false
 
+	DefaultTrendPoints = 300
+
 	DefaultAuthKey = "tm-76c296d3244f05b26cd082254"
 )
 
@@ -98,6 +100,7 @@ const (
 	KeyDarkMode   = "dark_mode"
 	KeyPaused     = "paused"
 	KeyAuthKey    = "auth_key"
+	KeyTrendPoints = "trend_points"
 )
 
 // DefaultSettings returns the key/value defaults written on first run.
@@ -113,5 +116,6 @@ func DefaultSettings() map[string]string {
 		KeyDarkMode:   strconv.FormatBool(DefaultDarkMode),
 		KeyPaused:     strconv.FormatBool(DefaultPaused),
 		KeyAuthKey:    DefaultAuthKey,
+		KeyTrendPoints: strconv.Itoa(DefaultTrendPoints),
 	}
 }

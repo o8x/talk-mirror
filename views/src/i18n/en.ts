@@ -25,6 +25,7 @@ export const en = {
   'common.localMachine': 'Local',
   'common.logout': 'Logout',
   'common.noData': 'No data',
+  'common.cancel': 'Cancel',
 
   'pause.banner': 'The system is paused and not receiving any data.',
 
@@ -53,6 +54,12 @@ export const en = {
   'sessions.columns': 'Columns',
   'sessions.noMessages': 'No messages yet.',
   'sessions.detail': 'detail',
+  'sessions.advancedSearch': 'Advanced search',
+  'sessions.keyword': 'Keyword',
+  'sessions.tagFilter': 'Tag',
+  'sessions.dataKey': 'Data key',
+  'sessions.dataValue': 'Data value',
+  'sessions.reset': 'Reset',
 
   'connections.globalActivity': 'Global activity',
   'connections.connections': 'Connections',
@@ -68,6 +75,9 @@ export const en = {
   'connections.delete': 'Delete',
   'connections.deleteConnectionConfirm': 'Delete this connection and all of its sessions and messages?',
   'connections.deleteSessionConfirm': 'Delete this session and all of its messages?',
+  'connections.export': 'Export',
+  'connections.exportJson': 'Export JSON',
+  'connections.exportCsv': 'Export CSV',
 
   'access.description':
     'Copy a ready-to-run client snippet. All examples use only the language standard library and push frames in the format |2-byte length|json| to the data port (default 3000).',
@@ -104,6 +114,7 @@ export const en = {
   'settings.appearance': 'Appearance',
   'settings.themeColor': 'Theme color',
   'settings.darkMode': 'Dark mode',
+  'settings.trendPoints': 'Trend points',
   'settings.storage': 'Storage (read-only)',
   'settings.sqliteFile': 'SQLite file',
   'settings.leveldbDir': 'LevelDB directory',

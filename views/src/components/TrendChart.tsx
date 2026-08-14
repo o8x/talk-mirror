@@ -50,10 +50,10 @@ export default function TrendChart({ data, height = 240, brushable = false, onBr
           smooth: true,
           showSymbol: true,
           symbol: 'circle',
-          symbolSize: 5,
+          symbolSize: 3,
           itemStyle: { color: pal.primary },
           data: data.map((d) => [Math.floor(d.ts / 1e6), d.count]),
-          lineStyle: { color: pal.primary, width: 2 },
+          lineStyle: { color: pal.primary, width: 1 },
           areaStyle: {
             color: {
               type: 'linear',

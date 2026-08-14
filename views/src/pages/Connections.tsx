@@ -3,11 +3,11 @@ import {
   Box,
   Card,
   Chip,
-  Dialog,
-  DialogContent,
-  DialogTitle,
+  Drawer,
   Grid,
   IconButton,
+  Menu,
+  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -18,32 +18,58 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DeleteIcon from '@mui/icons-material/Delete'
+import DownloadIcon from '@mui/icons-material/Download'
+import ConfirmDialog from '../components/ConfirmDialog'
 import StatCard from '../components/StatCard'
 import TrendChart from '../components/TrendChart'
-import { deleteConnection, deleteSession, getConnections, getOverview, getSessions } from '../api/client'
+import {
+  deleteConnection,
+  deleteSession,
+  exportSession,
+  getConnections,
+  getOverview,
+  getSessions,
+} from '../api/client'
 import { ws } from '../api/ws'
 import { formatCount, formatTime } from '../utils'
 import { useT } from '../i18n'
 import { useStore } from '../store/store'
 import type { Connection, Overview, Session } from '../types'
 
+interface ConfirmState {
+  title: string
+  content: string
+  onConfirm: () => void
+}
+
 export default function Connections() {
   const t = useT()
   const localIp = useStore((s) => s.localIp)
+  const settings = useStore((s) => s.settings)
   const [connections, setConnections] = useState<Connection[]>([])
   const [overview, setOverview] = useState<Overview | null>(null)
   const [detail, setDetail] = useState<Connection | null>(null)
   const [detailSessions, setDetailSessions] = useState<Session[]>([])
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null)
+  const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
+  const [exportTarget, setExportTarget] = useState<Session | null>(null)
+
+  // Connection overview chart uses half the configured trend point count.
+  const trendPoints = useMemo(() => {
+    const n = parseInt(settings.trend_points ?? '', 10)
+    const configured = Number.isFinite(n) && n > 0 ? n : 300
+    return Math.max(1, Math.floor(configured / 2))
+  }, [settings.trend_points])
 
   const refresh = useCallback(async () => {
     try {
-      const [cs, ov] = await Promise.all([getConnections(), getOverview({ seconds: 300 })])
+      const [cs, ov] = await Promise.all([getConnections(), getOverview({ seconds: 300, points: trendPoints })])
       setConnections(cs)
       setOverview(ov)
     } catch {
       /* ignore */
     }
-  }, [])
+  }, [trendPoints])
 
   useEffect(() => {
     refresh()
@@ -69,31 +95,57 @@ export default function Connections() {
   }, [])
 
   const handleDeleteConnection = useCallback(
-    async (c: Connection) => {
-      if (!window.confirm(t('connections.deleteConnectionConfirm'))) return
-      try {
-        await deleteConnection(c.id)
-        setDetail(null)
-        refresh()
-      } catch {
-        /* ignore */
-      }
+    (c: Connection) => {
+      setConfirm({
+        title: t('connections.delete'),
+        content: t('connections.deleteConnectionConfirm'),
+        onConfirm: async () => {
+          try {
+            await deleteConnection(c.id)
+            setDetail(null)
+            refresh()
+          } catch {
+            /* ignore */
+          }
+          setConfirm(null)
+        },
+      })
     },
     [refresh, t],
   )
 
   const handleDeleteSession = useCallback(
-    async (s: Session) => {
-      if (!window.confirm(t('connections.deleteSessionConfirm'))) return
+    (s: Session) => {
+      setConfirm({
+        title: t('connections.delete'),
+        content: t('connections.deleteSessionConfirm'),
+        onConfirm: async () => {
+          try {
+            await deleteSession(s.id)
+            setDetailSessions((prev) => prev.filter((x) => x.id !== s.id))
+            refresh()
+          } catch {
+            /* ignore */
+          }
+          setConfirm(null)
+        },
+      })
+    },
+    [refresh, t],
+  )
+
+  const doExport = useCallback(
+    async (format: 'json' | 'csv') => {
+      const s = exportTarget
+      setExportAnchor(null)
+      if (!s) return
       try {
-        await deleteSession(s.id)
-        setDetailSessions((prev) => prev.filter((x) => x.id !== s.id))
-        refresh()
+        await exportSession(s.id, format)
       } catch {
         /* ignore */
       }
     },
-    [refresh, t],
+    [exportTarget],
   )
 
   const activeSessions = useMemo(
@@ -201,14 +253,19 @@ export default function Connections() {
         </TableContainer>
       </Card>
 
-      <Dialog open={!!detail} onClose={() => setDetail(null)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {detail ? t('connections.dialogTitle', { ip: detail.ip }) : ''}
-          <IconButton onClick={() => setDetail(null)}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
+      <Drawer
+        anchor="right"
+        open={!!detail}
+        onClose={() => setDetail(null)}
+        sx={{ '& .MuiDrawer-paper': { width: { xs: '100%', sm: 560 } } }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography variant="h6">{detail ? t('connections.dialogTitle', { ip: detail.ip }) : ''}</Typography>
+            <IconButton onClick={() => setDetail(null)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {t('connections.firstSeen')} {detail ? formatTime(detail.first_seen) : ''} ·{' '}
             {t('connections.lastSeen')} {detail ? formatTime(detail.last_seen) : ''} ·{' '}
@@ -239,7 +296,17 @@ export default function Connections() {
                   </TableCell>
                   <TableCell>{formatCount(s.message_count)}</TableCell>
                   <TableCell sx={{ color: 'text.secondary' }}>{formatTime(s.last_active_at)}</TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton
+                      size="small"
+                      title={t('connections.export')}
+                      onClick={(e) => {
+                        setExportAnchor(e.currentTarget)
+                        setExportTarget(s)
+                      }}
+                    >
+                      <DownloadIcon fontSize="small" />
+                    </IconButton>
                     <IconButton
                       size="small"
                       title={t('connections.delete')}
@@ -259,8 +326,23 @@ export default function Connections() {
               )}
             </TableBody>
           </Table>
-        </DialogContent>
-      </Dialog>
+        </Box>
+      </Drawer>
+
+      <Menu anchorEl={exportAnchor} open={!!exportAnchor} onClose={() => setExportAnchor(null)}>
+        <MenuItem onClick={() => doExport('json')}>{t('connections.exportJson')}</MenuItem>
+        <MenuItem onClick={() => doExport('csv')}>{t('connections.exportCsv')}</MenuItem>
+      </Menu>
+
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title ?? ''}
+        content={confirm?.content ?? ''}
+        confirmText={t('connections.delete')}
+        cancelText={t('common.cancel')}
+        onConfirm={() => confirm?.onConfirm()}
+        onClose={() => setConfirm(null)}
+      />
     </Box>
   )
 }

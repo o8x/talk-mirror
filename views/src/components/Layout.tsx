@@ -115,6 +115,13 @@ export default function Layout() {
       >
         <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              {items.find((i) =>
+                i.path === '/' ? location.pathname === '/' : location.pathname.startsWith(i.path),
+              )?.label ?? ''}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <TranslateIcon fontSize="small" color="action" />
               <Select
@@ -132,13 +139,6 @@ export default function Layout() {
                 ))}
               </Select>
             </Box>
-            <Typography variant="subtitle1" fontWeight={600}>
-              {items.find((i) =>
-                i.path === '/' ? location.pathname === '/' : location.pathname.startsWith(i.path),
-              )?.label ?? ''}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
               onClick={() => window.open('https://github.com/o8x/talk-mirror', '_blank', 'noopener')}
               title="GitHub"

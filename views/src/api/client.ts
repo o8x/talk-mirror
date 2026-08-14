@@ -35,11 +35,14 @@ export function login(key: string): Promise<{ ok: boolean; ip: string }> {
   })
 }
 
-export function getOverview(opts: { seconds?: number; start?: number; end?: number } = {}): Promise<Overview> {
+export function getOverview(
+  opts: { seconds?: number; start?: number; end?: number; points?: number } = {},
+): Promise<Overview> {
   const p = new URLSearchParams()
   if (opts.seconds) p.set('seconds', String(opts.seconds))
   if (opts.start) p.set('start', String(opts.start))
   if (opts.end) p.set('end', String(opts.end))
+  if (opts.points) p.set('points', String(opts.points))
   return request<Overview>(`/api/stats/overview?${p.toString()}`)
 }
 
@@ -62,24 +65,55 @@ export function deleteSession(id: string): Promise<{ ok: boolean }> {
 
 export function getMessages(
   sessionId: string,
-  opts: { start?: number; end?: number; limit?: number; offset?: number } = {},
+  opts: {
+    start?: number
+    end?: number
+    limit?: number
+    offset?: number
+    q?: string
+    tag?: string
+    dataKey?: string
+    dataValue?: string
+  } = {},
 ): Promise<MessagesResponse> {
   const p = new URLSearchParams()
   if (opts.start) p.set('start', String(opts.start))
   if (opts.end) p.set('end', String(opts.end))
+  if (opts.q) p.set('q', opts.q)
+  if (opts.tag) p.set('tag', opts.tag)
+  if (opts.dataKey) p.set('data_key', opts.dataKey)
+  if (opts.dataValue) p.set('data_value', opts.dataValue)
   p.set('limit', String(opts.limit ?? 100))
   p.set('offset', String(opts.offset ?? 0))
   return request<MessagesResponse>(`/api/sessions/${sessionId}/messages?${p.toString()}`)
 }
 
+// exportSession downloads a session and all of its messages as JSON or CSV.
+export async function exportSession(sessionId: string, format: 'json' | 'csv'): Promise<void> {
+  const res = await fetch(`/api/sessions/${sessionId}/export?format=${format}`, {
+    headers: { Authorization: `Bearer ${getStoredKey()}` },
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `session-${sessionId}.${format}`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 export function getSessionBuckets(
   sessionId: string,
-  opts: { seconds?: number; start?: number; end?: number } = {},
+  opts: { seconds?: number; start?: number; end?: number; points?: number } = {},
 ): Promise<BucketPoint[]> {
   const p = new URLSearchParams()
   if (opts.seconds) p.set('seconds', String(opts.seconds))
   if (opts.start) p.set('start', String(opts.start))
   if (opts.end) p.set('end', String(opts.end))
+  if (opts.points) p.set('points', String(opts.points))
   return request<BucketPoint[]>(`/api/sessions/${sessionId}/buckets?${p.toString()}`)
 }
 
