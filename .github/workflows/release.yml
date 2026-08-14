@@ -57,9 +57,10 @@ jobs:
         run: |
           EXT=""
           if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
+          BIN="talk-mirror-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}"
           CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-            go build -trimpath -ldflags "$LDFLAGS" -o "talk-mirror${EXT}" .
-          echo "BIN=talk-mirror${EXT}" >> "$GITHUB_ENV"
+            go build -trimpath -ldflags "$LDFLAGS" -o "$BIN" .
+          echo "BIN=$BIN" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
         with:
