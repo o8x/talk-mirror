@@ -20,17 +20,18 @@ import (
 
 // Handler serves the REST API.
 type Handler struct {
-	mgr  *session.Manager
-	buf  *buffer.Buffer
-	db   *sqlite.Store
-	gate *state.Gate
-	hub  *hub.Hub
-	cfg  *config.Config
-	log  *slog.Logger
+	mgr      *session.Manager
+	buf      *buffer.Buffer
+	db       *sqlite.Store
+	gate     *state.Gate
+	hub      *hub.Hub
+	cfg      *config.Config
+	dataPort int
+	log      *slog.Logger
 }
 
-func New(mgr *session.Manager, buf *buffer.Buffer, db *sqlite.Store, gate *state.Gate, h *hub.Hub, cfg *config.Config, log *slog.Logger) *Handler {
-	return &Handler{mgr: mgr, buf: buf, db: db, gate: gate, hub: h, cfg: cfg, log: log}
+func New(mgr *session.Manager, buf *buffer.Buffer, db *sqlite.Store, gate *state.Gate, h *hub.Hub, cfg *config.Config, dataPort int, log *slog.Logger) *Handler {
+	return &Handler{mgr: mgr, buf: buf, db: db, gate: gate, hub: h, cfg: cfg, dataPort: dataPort, log: log}
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {

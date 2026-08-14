@@ -3,6 +3,7 @@ package api
 import (
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -361,8 +362,11 @@ func (h *Handler) code(w http.ResponseWriter, r *http.Request) {
 	fn := fnExamples[lang]
 
 	ip := internalIP()
+	port := strconv.Itoa(h.dataPort)
 	app = strings.ReplaceAll(app, "127.0.0.1", ip)
 	fn = strings.ReplaceAll(fn, "127.0.0.1", ip)
+	app = strings.ReplaceAll(app, "3000", port)
+	fn = strings.ReplaceAll(fn, "3000", port)
 
 	writeJSON(w, http.StatusOK, map[string]string{"lang": lang, "app": app, "fn": fn})
 }

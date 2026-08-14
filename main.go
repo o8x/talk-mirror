@@ -144,7 +144,7 @@ func runApp(ctx context.Context, cfg *config.Config) error {
 	if cfg.Port != 0 {
 		webPort = cfg.Port
 	}
-	apiHandler := api.New(mgr, buf, db, gate, h, cfg, log)
+	apiHandler := api.New(mgr, buf, db, gate, h, cfg, dataPort, log)
 	srv := server.New(webHost, webPort, cert, viewsFS, h, apiHandler, log)
 
 	go func() {
