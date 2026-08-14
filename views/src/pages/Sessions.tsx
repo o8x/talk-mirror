@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Box,
@@ -34,6 +34,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import ViewColumnIcon from '@mui/icons-material/ViewColumn'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import JsonHighlight from '../components/JsonHighlight'
 import TrendChart from '../components/TrendChart'
 import { getConnections, getMessages, getSessions, getSessionBuckets } from '../api/client'
 import { ws } from '../api/ws'
@@ -96,6 +97,67 @@ function JsonBlock({ value }: { value: unknown }) {
       {JSON.stringify(value, null, 2)}
     </SyntaxHighlighter>
   )
+}
+
+// renderCell renders a single message column. It lives at module scope so its
+// identity is stable and memoized rows are not invalidated on every parent
+// re-render.
+function renderCell(key: ColumnKey, m: MessageEvent): ReactNode {
+  switch (key) {
+    case 'seq':
+      return (
+        <span
+          style={{
+            display: 'inline-block',
+            minWidth: '6ch',
+            textAlign: 'right',
+            fontFamily: 'monospace',
+          }}
+        >
+          {m.seq}
+        </span>
+      )
+    case 'time':
+      return <span style={{ whiteSpace: 'nowrap' }}>{formatTime(m.time_nano)}</span>
+    case 'ip':
+      return <span style={{ fontFamily: 'monospace' }}>{m.ip}</span>
+    case 'port':
+      return <span style={{ fontFamily: 'monospace' }}>{m.port}</span>
+    case 'tag':
+      return (m.tag ?? []).map((tag) => (
+        <Chip
+          key={tag}
+          label={tag}
+          size="small"
+          sx={{
+            mr: 0.5,
+            backgroundColor: tagColor(tag),
+            color: '#fff',
+            fontWeight: 500,
+          }}
+        />
+      ))
+    case 'message':
+      return m.message
+    case 'data':
+      return (
+        <Typography
+          variant="body2"
+          component="span"
+          sx={{
+            fontFamily: 'monospace',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: 'inline-block',
+            maxWidth: 320,
+            verticalAlign: 'middle',
+          }}
+        >
+          <JsonHighlight value={m.data} />
+        </Typography>
+      )
+  }
 }
 
 export default function Sessions() {
@@ -308,64 +370,6 @@ export default function Sessions() {
     },
     [selSession, pageSize, filters],
   )
-
-  const renderCell = (key: ColumnKey, m: MessageEvent): ReactNode => {
-    switch (key) {
-      case 'seq':
-        return (
-          <span
-            style={{
-              display: 'inline-block',
-              minWidth: '6ch',
-              textAlign: 'right',
-              fontFamily: 'monospace',
-            }}
-          >
-            {m.seq}
-          </span>
-        )
-      case 'time':
-        return <span style={{ whiteSpace: 'nowrap' }}>{formatTime(m.time_nano)}</span>
-      case 'ip':
-        return <span style={{ fontFamily: 'monospace' }}>{m.ip}</span>
-      case 'port':
-        return <span style={{ fontFamily: 'monospace' }}>{m.port}</span>
-      case 'tag':
-        return (m.tag ?? []).map((tag) => (
-          <Chip
-            key={tag}
-            label={tag}
-            size="small"
-            sx={{
-              mr: 0.5,
-              backgroundColor: tagColor(tag),
-              color: '#fff',
-              fontWeight: 500,
-            }}
-          />
-        ))
-      case 'message':
-        return m.message
-      case 'data':
-        return (
-          <Typography
-            variant="body2"
-            component="span"
-            sx={{
-              fontFamily: 'monospace',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: 'inline-block',
-              maxWidth: 320,
-              verticalAlign: 'middle',
-            }}
-          >
-            {JSON.stringify(m.data)}
-          </Typography>
-        )
-    }
-  }
 
   const toggleColumn = (key: ColumnKey) => {
     setOrder((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
@@ -585,7 +589,7 @@ export default function Sessions() {
             </TableHead>
             <TableBody>
               {pageMessages.map((m) => (
-                <Row key={`${m.session_id}-${m.seq}`} m={m} order={order} renderCell={renderCell} t={t} />
+                <Row key={`${m.session_id}-${m.seq}`} m={m} order={order} />
               ))}
               {pageMessages.length === 0 && (
                 <TableRow>
@@ -614,17 +618,8 @@ export default function Sessions() {
   )
 }
 
-function Row({
-  m,
-  order,
-  renderCell,
-  t,
-}: {
-  m: MessageEvent
-  order: ColumnKey[]
-  renderCell: (key: ColumnKey, m: MessageEvent) => ReactNode
-  t: (k: string) => string
-}) {
+const Row = memo(function Row({ m, order }: { m: MessageEvent; order: ColumnKey[] }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -661,4 +656,4 @@ function Row({
       </TableRow>
     </>
   )
-}
+})
