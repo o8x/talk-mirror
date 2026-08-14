@@ -126,14 +126,20 @@ func runApp(ctx context.Context, cfg *config.Config) error {
 	}
 	log.Info("tls certificate ready", "cert", certPath, "key", keyPath)
 
-	// Web server.
+	// Web server (CLI --host/--port override the persisted settings).
 	webHost := settings[config.KeyWebHost]
 	if webHost == "" {
 		webHost = config.DefaultWebHost
 	}
+	if cfg.Host != "" {
+		webHost = cfg.Host
+	}
 	webPort, _ := strconv.Atoi(settings[config.KeyWebPort])
 	if webPort == 0 {
 		webPort = config.DefaultWebPort
+	}
+	if cfg.Port != 0 {
+		webPort = cfg.Port
 	}
 	apiHandler := api.New(mgr, buf, db, gate, h, cfg, log)
 	srv := server.New(webHost, webPort, cert, viewsFS, h, apiHandler, log)

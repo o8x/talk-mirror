@@ -63,6 +63,8 @@ Then open `https://127.0.0.1:443` (accept the self-signed certificate on first r
 |------|---------|-------------|
 | `-d` | *(platform-specific, see below)* | Data directory for SQLite, LevelDB, certificates and logs (auto-created). |
 | `-w` | *(data dir)* | Log file path; defaults to `<data-dir>/talk-mirror.log`. |
+| `--host` | *(settings)* | Override the web listen address (falls back to the `web_host` setting). |
+| `--port` | *(settings)* | Override the web listen port (falls back to the `web_port` setting). |
 
 The default data directory is baked in at packaging time:
 

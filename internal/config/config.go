@@ -30,6 +30,8 @@ type Config struct {
 	DataDir string // -d, root data folder
 	LogFile string // -w, optional explicit log file path
 	ExeDir  string // directory of the running binary
+	Host    string // --host, override web listen address (empty = use settings)
+	Port    int    // --port, override web listen port (0 = use settings)
 }
 
 // Paths derived from DataDir.
@@ -48,6 +50,8 @@ func (c *Config) LogPath() string {
 func ParseFlags() (*Config, error) {
 	dataDir := flag.String("d", DefaultDataDir, "data directory for sqlite, leveldb, certs and logs")
 	logFile := flag.String("w", "", "log file path (defaults to <data-dir>/talk-mirror.log)")
+	host := flag.String("host", "", "override web listen address (default: use settings)")
+	port := flag.Int("port", 0, "override web listen port (default: use settings)")
 	flag.Parse()
 
 	absData, err := filepath.Abs(*dataDir)
@@ -69,6 +73,8 @@ func ParseFlags() (*Config, error) {
 		DataDir: absData,
 		LogFile: absLog,
 		ExeDir:  filepath.Dir(exe),
+		Host:    *host,
+		Port:    *port,
 	}, nil
 }
 
