@@ -1,11 +1,38 @@
 import type { BucketPoint, Connection, MessagesResponse, Overview, Session } from '../types'
 
+const KEY_STORAGE = 'talk-mirror-key'
+
+export function getStoredKey(): string {
+  return localStorage.getItem(KEY_STORAGE) ?? ''
+}
+
+export function setStoredKey(key: string) {
+  localStorage.setItem(KEY_STORAGE, key)
+}
+
+export function clearStoredKey() {
+  localStorage.removeItem(KEY_STORAGE)
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init)
+  const headers = new Headers(init?.headers)
+  const key = getStoredKey()
+  if (key && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${key}`)
+  }
+  const res = await fetch(path, { ...init, headers })
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`)
   }
   return res.json() as Promise<T>
+}
+
+export function login(key: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ key }),
+  })
 }
 
 export function getOverview(opts: { seconds?: number; start?: number; end?: number } = {}): Promise<Overview> {
@@ -75,10 +102,11 @@ export function getCode(lang: string): Promise<{ lang: string; class: string; ap
 export function sendTestMessage(
   baseUrl: string,
   body: { message: string; data?: Record<string, string> },
+  key: string,
 ): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(`${baseUrl}/api/ingest`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify(body),
   })
 }

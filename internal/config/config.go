@@ -18,6 +18,8 @@ const (
 	DefaultThemeColor = "#c62828"
 	DefaultDarkMode   = false
 	DefaultPaused     = false
+
+	DefaultAuthKey = "tm-76c296d3244f05b26cd082254"
 )
 
 // DefaultDataDir is the fallback value of the -d flag. Packaged builds override
@@ -33,6 +35,7 @@ type Config struct {
 	Host     string // --host, override web listen address (empty = use settings)
 	Port     int    // --port, override web listen port (0 = use settings)
 	TalkPort int    // --talk-port, override data listen port (0 = use settings)
+	Key      string // --key, super-admin login key (empty = use the stored key)
 }
 
 // Paths derived from DataDir.
@@ -54,6 +57,7 @@ func ParseFlags() (*Config, error) {
 	host := flag.String("host", "", "override web listen address (default: use settings)")
 	port := flag.Int("port", 0, "override web listen port (default: use settings)")
 	talkPort := flag.Int("talk-port", 0, "override data listen port (default: use settings)")
+	key := flag.String("key", "", "super-admin login key (default: use the stored key)")
 	flag.Parse()
 
 	absData, err := filepath.Abs(*dataDir)
@@ -78,6 +82,7 @@ func ParseFlags() (*Config, error) {
 		Host:     *host,
 		Port:     *port,
 		TalkPort: *talkPort,
+		Key:      *key,
 	}, nil
 }
 
@@ -92,6 +97,7 @@ const (
 	KeyThemeColor = "theme_color"
 	KeyDarkMode   = "dark_mode"
 	KeyPaused     = "paused"
+	KeyAuthKey    = "auth_key"
 )
 
 // DefaultSettings returns the key/value defaults written on first run.
@@ -106,5 +112,6 @@ func DefaultSettings() map[string]string {
 		KeyThemeColor: DefaultThemeColor,
 		KeyDarkMode:   strconv.FormatBool(DefaultDarkMode),
 		KeyPaused:     strconv.FormatBool(DefaultPaused),
+		KeyAuthKey:    DefaultAuthKey,
 	}
 }

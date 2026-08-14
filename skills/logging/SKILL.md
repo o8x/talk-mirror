@@ -8,7 +8,7 @@ description: Write a debug log message to Talk-mirror over HTTP. Assume the user
 Write a log message by POSTing a JSON payload to the ingest endpoint.
 
 - **Endpoint**: `POST https://<host>:443/api/ingest`
-- **Headers**: `Content-Type: application/json`
+- **Headers**: `Content-Type: application/json`, `Authorization: Bearer <key>`
 - **TLS**: `verify: false` (self-signed certificate).
 
 ## Log message format
@@ -38,7 +38,7 @@ so no session id is needed.
 https_request(
   method: "POST",
   url: "https://<host>:443/api/ingest",
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", "Authorization": "Bearer <key>" },
   body: JSON.stringify({
     "tag": ["..."],
     "message": "...",

@@ -1,12 +1,14 @@
 package api
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"log/slog"
 	"net"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/o8x/talk-mirror/internal/config"
@@ -47,6 +49,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/pause", h.pause)
 	mux.HandleFunc("GET /api/code/{lang}", h.code)
 	mux.HandleFunc("POST /api/ingest", h.ingest)
+	mux.HandleFunc("POST /api/login", h.login)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -57,6 +60,57 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeErr(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+// extractKey returns the key carried in the Authorization or X-Talk-Mirror-Key
+// header.
+func extractKey(r *http.Request) string {
+	key := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer"))
+	if key == "" {
+		key = strings.TrimSpace(r.Header.Get("X-Talk-Mirror-Key"))
+	}
+	return key
+}
+
+// validKey reports whether key matches the CLI key or the stored DB key.
+func (h *Handler) validKey(key string) bool {
+	if key == "" {
+		return false
+	}
+	if h.cfg.Key != "" && subtle.ConstantTimeCompare([]byte(key), []byte(h.cfg.Key)) == 1 {
+		return true
+	}
+	dbKey, err := h.db.GetSetting(config.KeyAuthKey)
+	if err == nil && dbKey != "" && subtle.ConstantTimeCompare([]byte(key), []byte(dbKey)) == 1 {
+		return true
+	}
+	return false
+}
+
+// Authenticate checks the request key, writing a 401 response when invalid.
+func (h *Handler) Authenticate(w http.ResponseWriter, r *http.Request) bool {
+	if h.validKey(extractKey(r)) {
+		return true
+	}
+	writeErr(w, http.StatusUnauthorized, "unauthorized")
+	return false
+}
+
+// login validates a key and reports success.
+func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
+	key := extractKey(r)
+	if key == "" {
+		var body struct {
+			Key string `json:"key"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		key = strings.TrimSpace(body.Key)
+	}
+	if !h.validKey(key) {
+		writeErr(w, http.StatusUnauthorized, "invalid key")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 // --- stats ---

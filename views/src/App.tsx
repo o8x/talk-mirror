@@ -11,18 +11,21 @@ import Sessions from './pages/Sessions'
 import Connections from './pages/Connections'
 import Test from './pages/Test'
 import Settings from './pages/Settings'
+import Login from './pages/Login'
 
 const Access = lazy(() => import('./pages/Access'))
 
 export default function App() {
   const darkMode = useStore((s) => s.darkMode)
   const themeColor = useStore((s) => s.themeColor)
+  const key = useStore((s) => s.key)
   const setSettings = useStore((s) => s.setSettings)
   const setDarkMode = useStore((s) => s.setDarkMode)
   const setThemeColor = useStore((s) => s.setThemeColor)
   const setPaused = useStore((s) => s.setPaused)
 
   useEffect(() => {
+    if (!key) return
     getSettings()
       .then((s) => {
         setSettings(s)
@@ -31,34 +34,35 @@ export default function App() {
         if (s.paused === 'true') setPaused(true)
       })
       .catch(() => {})
-  }, [setSettings, setDarkMode, setThemeColor, setPaused])
-
-  useEffect(() => {
     ws.connect()
-  }, [])
+  }, [key, setSettings, setDarkMode, setThemeColor, setPaused])
 
   const theme = useMemo(() => buildTheme(darkMode, themeColor), [darkMode, themeColor])
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="sessions" element={<Sessions />} />
-            <Route path="connections" element={<Connections />} />
-            <Route path="access" element={
-                <Suspense fallback={null}>
-                  <Access />
-                </Suspense>
-              }
-            />
-            <Route path="test" element={<Test />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      {key ? (
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="sessions" element={<Sessions />} />
+              <Route path="connections" element={<Connections />} />
+              <Route path="access" element={
+                  <Suspense fallback={null}>
+                    <Access />
+                  </Suspense>
+                }
+              />
+              <Route path="test" element={<Test />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      ) : (
+        <Login />
+      )}
     </ThemeProvider>
   )
 }

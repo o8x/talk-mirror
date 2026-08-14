@@ -38,6 +38,9 @@
 - **Pause** the whole system from the UI without stopping the process.
 - **HTTP ingest** — write log messages via `POST /api/ingest`, so AI agents (with
   only an HTTP tool) can push logs; see the [skills](skills) directory.
+- **Authentication** — a login page protects the UI, and every API request must
+  carry the access key in the `Authorization` header (default
+  `tm-76c296d3244f05b26cd082254`, changeable in Settings or via `--key`).
 
 ## Quick start
 
@@ -66,6 +69,7 @@ Then open `https://127.0.0.1:443` (accept the self-signed certificate on first r
 | `--host` | *(settings)* | Override the web listen address (falls back to the `web_host` setting). |
 | `--port` | *(settings)* | Override the web listen port (falls back to the `web_port` setting). |
 | `--talk-port` | *(settings)* | Override the data listen port (falls back to the `data_port` setting). |
+| `--key` | *(settings)* | Super-admin login key; equally valid with the stored key for login and API requests. |
 
 The default data directory is baked in at packaging time:
 

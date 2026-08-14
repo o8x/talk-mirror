@@ -17,7 +17,8 @@ Talk-mirror 是一个自包含的远程调试器：客户端通过 TCP/UDP 推�
 - **基础地址**：`https://<host>:443`（Talk-mirror 服务器地址）。
 - **TLS**：服务器默认使用自签名证书，因此 `https_request` 工具必须允许不安全连接
   （`verify: false`）。
-- **认证**：默认无需认证。
+- **认证**：每个 API 请求都需在 `Authorization: Bearer <key>` 头中携带访问密钥。
+  默认密钥为 `tm-76c296d3244f05b26cd082254`（可在设置中或通过 `--key` 修改）。
 
 ## 交互方式
 

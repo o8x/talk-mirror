@@ -41,7 +41,13 @@ func (s *Server) buildHandler() http.Handler {
 	fileServer := http.FileServer(http.FS(dist))
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/ws" {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			if r.URL.Path == "/api/login" || s.api.Authenticate(w, r) {
+				mux.ServeHTTP(w, r)
+			}
+			return
+		}
+		if r.URL.Path == "/ws" {
 			mux.ServeHTTP(w, r)
 			return
 		}

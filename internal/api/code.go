@@ -13,7 +13,7 @@ var classExamples = map[string]string{
 	"javascript": `// Node.js (stdlib only) - TalkMirror client class
 const net = require('net');
 
-class TalkMirror {
+class talk_mirror {
     constructor(address, port) {
         this.conn = net.createConnection({ host: address, port: port });
     }
@@ -38,7 +38,7 @@ import struct
 import time
 
 
-class TalkMirror:
+class talk_mirror:
     def __init__(self, address, port):
         self.sock = socket.create_connection((address, port))
 
@@ -139,9 +139,9 @@ talk_mirror_talk() {
 #include <string>
 #include <vector>
 
-class TalkMirror {
+class talk_mirror {
 public:
-    TalkMirror(const std::string& address, int port) {
+    talk_mirror(const std::string& address, int port) {
         sock_ = socket(AF_INET, SOCK_STREAM, 0);
         sockaddr_in addr{};
         addr.sin_family = AF_INET;
@@ -182,13 +182,13 @@ private:
 // appExamples show how to instantiate and use the class.
 var appExamples = map[string]string{
 	"javascript": `// Node.js (stdlib only) - usage
-const tm = new TalkMirror('127.0.0.1', 3000);
+const tm = new talk_mirror('127.0.0.1', 3000);
 
 tm.talk('hello', ['info'], { foo: 'bar' });
 `,
 
 	"python": `# Python 3 (stdlib only) - usage
-tm = TalkMirror("127.0.0.1", 3000)
+tm = talk_mirror("127.0.0.1", 3000)
 
 tm.talk("hello", ["info"], {"foo": "bar"})
 `,
@@ -212,7 +212,7 @@ talk_mirror_talk "hello" '["info"]' '{"foo":"bar"}'
 
 	"c++": `// C++17 (stdlib only) - usage.
 int main() {
-    TalkMirror tm("127.0.0.1", 3000);
+    talk_mirror tm("127.0.0.1", 3000);
 
     tm.talk("hello", {"info"}, {{"foo", "bar"}});
     return 0;

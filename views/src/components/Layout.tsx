@@ -29,6 +29,7 @@ import LightModeIcon from '@mui/icons-material/LightMode'
 import PauseCircleIcon from '@mui/icons-material/PauseCircle'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import TranslateIcon from '@mui/icons-material/Translate'
+import GitHubIcon from '@mui/icons-material/GitHub'
 import { useStore } from '../store/store'
 import { setPause, saveSettings } from '../api/client'
 import { LANGS, useLang, useT } from '../i18n'
@@ -116,6 +117,12 @@ export default function Layout() {
             )?.label ?? ''}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton
+              onClick={() => window.open('https://github.com/o8x/talk-mirror', '_blank', 'noopener')}
+              title="GitHub"
+            >
+              <GitHubIcon />
+            </IconButton>
             <Tooltip title={paused ? t('common.resume') : t('common.pause')}>
               <IconButton
                 onClick={() => {

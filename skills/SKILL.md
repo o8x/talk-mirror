@@ -20,7 +20,9 @@ endpoint for writing log messages.
 - **Base URL**: `https://<host>:443` (the Talk-mirror server address).
 - **TLS**: the server uses a self-signed certificate by default, so the
   `https_request` tool must allow insecure connections (`verify: false`).
-- **Auth**: none required by default.
+- **Auth**: send the access key in the `Authorization: Bearer <key>` header on
+  every API request. The default key is `tm-76c296d3244f05b26cd082254`
+  (changeable in Settings or via `--key`).
 
 ## How to interact
 

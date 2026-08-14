@@ -8,7 +8,7 @@ description: 通过 HTTP 向 Talk-mirror 写入一条调试日志。假设用户
 向摄入端点 POST 一段 JSON 即可写入一条日志消息。
 
 - **端点**：`POST https://<host>:443/api/ingest`
-- **请求头**：`Content-Type: application/json`
+- **请求头**：`Content-Type: application/json`、`Authorization: Bearer <key>`
 - **TLS**：`verify: false`（自签名证书）。
 
 ## 日志消息格式
@@ -37,7 +37,7 @@ description: 通过 HTTP 向 Talk-mirror 写入一条调试日志。假设用户
 https_request(
   method: "POST",
   url: "https://<host>:443/api/ingest",
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", "Authorization": "Bearer <key>" },
   body: JSON.stringify({
     "tag": ["..."],
     "message": "...",

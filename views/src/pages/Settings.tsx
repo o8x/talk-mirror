@@ -23,6 +23,7 @@ interface FormState {
   tls_cert: string
   tls_key: string
   theme_color: string
+  auth_key: string
 }
 
 export default function Settings() {
@@ -38,6 +39,7 @@ export default function Settings() {
     tls_cert: '',
     tls_key: '',
     theme_color: '#c62828',
+    auth_key: '',
   })
   const [readonly, setReadonly] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
@@ -53,6 +55,7 @@ export default function Settings() {
           tls_cert: s.tls_cert ?? '',
           tls_key: s.tls_key ?? '',
           theme_color: s.theme_color ?? '#c62828',
+          auth_key: s.auth_key ?? '',
         })
         setReadonly({ leveldb_dir: s.leveldb_dir ?? '', sqlite_file: s.sqlite_file ?? '' })
       })
@@ -148,6 +151,23 @@ export default function Settings() {
               value={form.tls_key}
               onChange={set('tls_key')}
               placeholder="auto-generated if empty"
+              InputLabelProps={shrink}
+            />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 3 }} />
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+          {t('settings.security')}
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('settings.authKey')}
+              value={form.auth_key}
+              onChange={set('auth_key')}
               InputLabelProps={shrink}
             />
           </Grid>

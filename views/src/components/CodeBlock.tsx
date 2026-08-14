@@ -64,7 +64,7 @@ export default function CodeBlock({ code, language, title }: Props) {
         showLineNumbers
         wrapLongLines
         customStyle={{ margin: 0, background: 'transparent', fontSize: 12, lineHeight: 1.6 }}
-        lineNumberStyle={{ minWidth: '2.4em', opacity: 0.45 }}
+        lineNumberStyle={{ minWidth: '2.4em', opacity: 0.45, userSelect: 'none' }}
         codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' } }}
       >
         {code.trimEnd()}

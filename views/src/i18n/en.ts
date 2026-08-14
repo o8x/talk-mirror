@@ -70,15 +70,18 @@ export const en = {
   'test.server': 'Server address',
   'test.apiPort': 'API port',
   'test.talkPort': 'Talk port',
+  'test.key': 'Access key',
   'test.message': 'Message',
   'test.data': 'Data',
-  'test.key': 'Key',
+  'test.fieldKey': 'Key',
   'test.value': 'Value',
   'test.addField': 'Add field',
   'test.run': 'Test',
   'test.success': 'Sent successfully',
   'test.failed': 'Send failed',
   'test.duration': 'Duration',
+  'test.preview': 'Data preview',
+  'test.generatedCode': 'Test code',
   'test.hint': 'Sends a message to the server via the HTTP ingest endpoint (API port). The talk port is where raw TCP/UDP clients connect.',
 
   'settings.network': 'Network',
@@ -97,6 +100,8 @@ export const en = {
   'settings.leveldbDir': 'LevelDB directory',
   'settings.restartNote': 'Port, address and TLS changes require a restart.',
   'settings.saved': 'Settings saved',
+  'settings.security': 'Security',
+  'settings.authKey': 'Access key',
 }
 
 export type Dict = typeof en
