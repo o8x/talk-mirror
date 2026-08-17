@@ -93,6 +93,8 @@ export const zh: Dict = {
   'test.talkPort': 'Talk 端口',
   'test.key': '访问密钥',
   'test.message': '消息内容',
+  'test.sessionId': '会话 ID',
+  'test.sessionIdPlaceholder': '可选；推送到该会话',
   'test.data': '数据',
   'test.fieldKey': '键',
   'test.value': '值',

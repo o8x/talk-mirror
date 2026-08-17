@@ -151,7 +151,7 @@ export function getCode(lang: string): Promise<{ lang: string; class: string; ap
 
 export function sendTestMessage(
   baseUrl: string,
-  body: { tag?: string[]; message: string; data?: Record<string, string> },
+  body: { tag?: string[]; message: string; data?: Record<string, string>; session_id?: string },
   key: string,
 ): Promise<{ ok: boolean; ip: string; port: number }> {
   return request<{ ok: boolean; ip: string; port: number }>(`${baseUrl}/api/ingest`, {

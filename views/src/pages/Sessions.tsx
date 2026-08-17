@@ -63,6 +63,18 @@ const ALL_COLUMNS: ColumnKey[] = ['seq', 'time', 'ip', 'port', 'tag', 'message',
 const DEFAULT_ORDER: ColumnKey[] = ['seq', 'time', 'ip', 'port', 'tag', 'message', 'data']
 const COL_KEY = 'talk-mirror-session-columns'
 
+// Compact fixed widths for the non-data columns; the data column absorbs all
+// remaining table width.
+const COLUMN_WIDTHS: Record<ColumnKey, string> = {
+  seq: '60px',
+  time: '150px',
+  ip: '120px',
+  port: '60px',
+  tag: '160px',
+  message: '220px',
+  data: 'auto',
+}
+
 function loadOrder(): ColumnKey[] {
   try {
     const raw = localStorage.getItem(COL_KEY)
@@ -149,8 +161,8 @@ function renderCell(key: ColumnKey, m: MessageEvent): ReactNode {
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            display: 'inline-block',
-            maxWidth: 320,
+            display: 'block',
+            width: '100%',
             verticalAlign: 'middle',
           }}
         >
@@ -578,12 +590,14 @@ export default function Sessions() {
 
       <Card>
         <TableContainer>
-          <Table size="small">
+          <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHead>
               <TableRow>
-                <TableCell padding="checkbox" />
+                <TableCell padding="checkbox" sx={{ width: 40 }} />
                 {order.map((key) => (
-                  <TableCell key={key}>{columnLabel[key]}</TableCell>
+                  <TableCell key={key} sx={{ width: COLUMN_WIDTHS[key], px: 1.25, whiteSpace: 'nowrap' }}>
+                    {columnLabel[key]}
+                  </TableCell>
                 ))}
               </TableRow>
             </TableHead>
@@ -630,7 +644,9 @@ const Row = memo(function Row({ m, order }: { m: MessageEvent; order: ColumnKey[
           </IconButton>
         </TableCell>
         {order.map((key) => (
-          <TableCell key={key}>{renderCell(key, m)}</TableCell>
+          <TableCell key={key} sx={{ px: 1.25 }}>
+            {renderCell(key, m)}
+          </TableCell>
         ))}
       </TableRow>
       <TableRow>

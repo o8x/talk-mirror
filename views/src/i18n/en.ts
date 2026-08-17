@@ -91,6 +91,8 @@ export const en = {
   'test.talkPort': 'Talk port',
   'test.key': 'Access key',
   'test.message': 'Message',
+  'test.sessionId': 'Session ID',
+  'test.sessionIdPlaceholder': 'optional; pushes to this session',
   'test.data': 'Data',
   'test.fieldKey': 'Key',
   'test.value': 'Value',
