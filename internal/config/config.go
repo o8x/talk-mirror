@@ -29,10 +29,10 @@ const (
 // github.com/o8x/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror".
 var DefaultDataDir = "./data"
 
-// Version is the build version, injected at link time, e.g. -ldflags
-// "-X github.com/o8x/talk-mirror/internal/config.Version=1.2.0". Dev builds
-// keep the default.
-var Version = "dev"
+// Version is the build/feature version. It defaults to the current feature
+// version and can be overridden at link time for packaged builds, e.g.
+// -ldflags "-X github.com/o8x/talk-mirror/internal/config.Version=1.4.0".
+var Version = "1.4.0"
 
 // Config carries all runtime configuration resolved from flags and settings.
 type Config struct {
