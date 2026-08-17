@@ -198,6 +198,7 @@ export default function Sessions() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS)
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
+  const [nowTs, setNowTs] = useState(() => Date.now())
 
   const columnLabel: Record<ColumnKey, string> = useMemo(
     () => ({
@@ -358,6 +359,22 @@ export default function Sessions() {
     return off
   }, [selSession, rangeSeconds, filters, live])
 
+  // Keep the session activity indicator fresh while live mode is on.
+  useEffect(() => {
+    if (!live) return
+    const timer = window.setInterval(() => {
+      setNowTs(Date.now())
+      refreshSessions()
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [live, refreshSessions])
+
+  const selectedSession = useMemo(
+    () => sessions.find((s) => s.id === selSession),
+    [sessions, selSession],
+  )
+  const sessionActive = !!selectedSession && nowTs - Math.floor(selectedSession.last_active_at / 1e6) <= 5000
+
   const filteredSessions = useMemo(() => {
     if (!selConn) return sessions
     return sessions.filter((s) => s.client_id === selConn)
@@ -456,6 +473,15 @@ export default function Sessions() {
             ))}
           </Select>
         </FormControl>
+        <Chip
+          size="small"
+          label={
+            selSession ? (sessionActive ? t('common.active') : t('common.closed')) : t('common.none')
+          }
+          color={sessionActive ? 'success' : 'default'}
+          variant={sessionActive ? 'filled' : 'outlined'}
+          sx={{ ml: 0.5 }}
+        />
         <FormControlLabel
           control={
             <Switch size="small" checked={live} onChange={(e) => setLive(e.target.checked)} />

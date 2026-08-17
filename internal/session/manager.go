@@ -3,6 +3,8 @@ package session
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -86,12 +88,36 @@ func (m *Manager) Handle(ip string, port int, transport string, in model.Incomin
 	m.mu.Lock()
 	clientID, cs := m.ensureClientLocked(ip, now)
 	var ss *SessionState
+	newlyCreated := false
 	if in.SessionID != "" {
 		// A client-provided session_id pins the message to that exact session,
 		// ignoring the source port; a display name is derived from the id.
+		if _, ok := m.sessions[in.SessionID]; !ok {
+			newlyCreated = true
+		}
 		ss = m.ensureNamedSessionLocked(clientID, ip, protocol, in.SessionID, now, true)
 	} else {
+		if _, ok := m.keyIndex[keyOf(ip, port, protocol)]; !ok {
+			newlyCreated = true
+		}
 		ss = m.ensureSessionLocked(clientID, cs, ip, port, protocol, now)
+	}
+	// A session that is newly created or has been inactive for a while
+	// reactivates now: record a system activation message first.
+	if newlyCreated || now-ss.LastActiveAt > int64(ActiveWindow) {
+		ss.seq++
+		ss.MessageCount++
+		act := model.Record{
+			Seq:        ss.seq,
+			SessionID:  ss.ID,
+			TimeNano:   now,
+			Tag:        []string{"system"},
+			Message:    fmt.Sprintf("Session activated by %s:%d", ip, port),
+			Data:       json.RawMessage("{}"),
+			ReceivedAt: now,
+		}
+		m.buf.Append(act)
+		m.hub.SendMessage(ss.ID, clientID, MessageEvent{Record: act, IP: ip, Port: port, Protocol: protocol})
 	}
 	ss.seq++
 	ss.MessageCount++
