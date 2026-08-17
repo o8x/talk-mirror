@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -87,8 +88,8 @@ func (m *Manager) Handle(ip string, port int, transport string, in model.Incomin
 	var ss *SessionState
 	if in.SessionID != "" {
 		// A client-provided session_id pins the message to that exact session,
-		// ignoring the source port.
-		ss = m.ensureNamedSessionLocked(clientID, ip, protocol, in.SessionID, now)
+		// ignoring the source port; a display name is derived from the id.
+		ss = m.ensureNamedSessionLocked(clientID, ip, protocol, in.SessionID, now, true)
 	} else {
 		ss = m.ensureSessionLocked(clientID, cs, ip, port, protocol, now)
 	}
@@ -195,8 +196,10 @@ func (m *Manager) ensureSessionLocked(clientID string, cs *ClientState, ip strin
 
 // ensureNamedSessionLocked returns the session identified by sessionID,
 // creating it on first sight (with a random port) when it does not exist yet.
-// Lookup is by session_id only, ignoring the source port and address.
-func (m *Manager) ensureNamedSessionLocked(clientID, ip, protocol, sessionID string, now int64) *SessionState {
+// Lookup is by session_id only, ignoring the source port and address. When the
+// session is auto-created from a client-provided id, deriveName controls
+// whether a display name is derived from the id.
+func (m *Manager) ensureNamedSessionLocked(clientID, ip, protocol, sessionID string, now int64, deriveName bool) *SessionState {
 	if ss, ok := m.sessions[sessionID]; ok {
 		ss.Status = model.StatusActive
 		ss.lastRecv = time.Now()
@@ -212,6 +215,10 @@ func (m *Manager) ensureNamedSessionLocked(clientID, ip, protocol, sessionID str
 	if port == 0 {
 		port = m.randomPortLocked(ip, protocol)
 	}
+	name := ""
+	if deriveName {
+		name = sessionNameFromID(sessionID)
+	}
 	ss := &SessionState{
 		Session: model.Session{
 			ID:           sessionID,
@@ -222,6 +229,7 @@ func (m *Manager) ensureNamedSessionLocked(clientID, ip, protocol, sessionID str
 			Status:       model.StatusActive,
 			CreatedAt:    now,
 			LastActiveAt: now,
+			Name:         name,
 		},
 		lastRecv: time.Now(),
 	}
@@ -231,9 +239,22 @@ func (m *Manager) ensureNamedSessionLocked(clientID, ip, protocol, sessionID str
 		cs.sessions[sessionID] = struct{}{}
 	}
 	_ = m.db.UpsertSession(&ss.Session)
-	m.log.Info("session created", "id", sessionID, "ip", ip, "port", port, "protocol", protocol)
+	m.log.Info("session created", "id", sessionID, "ip", ip, "port", port, "protocol", protocol, "name", name)
 	m.hub.Broadcast("session", ss.Session)
 	return ss
+}
+
+// sessionNameFromID derives a display name from a session id: dashes become
+// spaces and each word is capitalized (e.g. "pay-error" -> "Pay Error").
+func sessionNameFromID(id string) string {
+	parts := strings.Fields(strings.ReplaceAll(id, "-", " "))
+	for i, p := range parts {
+		r := []rune(p)
+		if len(r) > 0 {
+			parts[i] = strings.ToUpper(string(r[0])) + string(r[1:])
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 // CreateNamedSession creates a new session with a fresh ID and a random port so
@@ -242,7 +263,7 @@ func (m *Manager) CreateNamedSession(clientID, ip, protocol string, now int64) *
 	id := newID()
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.ensureNamedSessionLocked(clientID, ip, protocol, id, now)
+	return m.ensureNamedSessionLocked(clientID, ip, protocol, id, now, false)
 }
 
 // randomPortLocked picks an unused high port for a named session.
