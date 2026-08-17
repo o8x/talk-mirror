@@ -46,6 +46,10 @@ export function getOverview(
   return request<Overview>(`/api/stats/overview?${p.toString()}`)
 }
 
+export function getVersion(): Promise<{ version: string }> {
+  return request<{ version: string }>('/api/version')
+}
+
 export function getConnections(): Promise<Connection[]> {
   return request<Connection[]>('/api/connections')
 }

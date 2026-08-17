@@ -19,6 +19,7 @@ interface AppState {
   lang: string
   key: string
   localIp: string
+  version: string
   settings: Settings
   setDarkMode: (v: boolean) => void
   toggleDark: () => void
@@ -29,6 +30,7 @@ interface AppState {
   setKey: (v: string) => void
   clearKey: () => void
   setLocalIp: (v: string) => void
+  setVersion: (v: string) => void
   setSettings: (s: Settings) => void
 }
 
@@ -40,6 +42,7 @@ export const useStore = create<AppState>((set) => ({
   lang: localStorage.getItem(LANG_KEY) ?? 'en',
   key: localStorage.getItem(KEY_KEY) ?? '',
   localIp: localStorage.getItem(LOCAL_IP_KEY) ?? '',
+  version: '',
   settings: {},
   setDarkMode: (v) => set({ darkMode: v }),
   toggleDark: () =>
@@ -69,5 +72,6 @@ export const useStore = create<AppState>((set) => ({
     localStorage.setItem(LOCAL_IP_KEY, v)
     set({ localIp: v })
   },
+  setVersion: (v) => set({ version: v }),
   setSettings: (s) => set({ settings: s }),
 }))

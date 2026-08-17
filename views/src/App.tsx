@@ -4,7 +4,7 @@ import { CssBaseline, ThemeProvider } from '@mui/material'
 import { buildTheme } from './theme/theme'
 import { useStore } from './store/store'
 import { ws } from './api/ws'
-import { getSettings } from './api/client'
+import { getSettings, getVersion } from './api/client'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Sessions from './pages/Sessions'
@@ -23,9 +23,13 @@ export default function App() {
   const setDarkMode = useStore((s) => s.setDarkMode)
   const setThemeColor = useStore((s) => s.setThemeColor)
   const setPaused = useStore((s) => s.setPaused)
+  const setVersion = useStore((s) => s.setVersion)
 
   useEffect(() => {
     if (!key) return
+    getVersion()
+      .then((r) => setVersion(r.version))
+      .catch(() => {})
     getSettings()
       .then((s) => {
         setSettings(s)

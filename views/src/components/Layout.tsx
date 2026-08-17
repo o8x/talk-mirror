@@ -51,6 +51,7 @@ export default function Layout() {
   const setPaused = useStore((s) => s.setPaused)
   const clearKey = useStore((s) => s.clearKey)
   const wsConnected = useStore((s) => s.wsConnected)
+  const version = useStore((s) => s.version)
   const [mobileOpen, setMobileOpen] = useState(false)
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
@@ -93,6 +94,7 @@ export default function Layout() {
       </List>
       <Box sx={{ mt: 'auto', p: 2 }}>
         <Typography variant="caption" color="text.secondary">
+          {version && `${version === 'dev' ? 'dev' : `v${version}`} · `}
           ws: {wsConnected ? t('common.ws.connected') : t('common.ws.offline')}
         </Typography>
       </Box>

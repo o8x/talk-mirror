@@ -29,6 +29,11 @@ const (
 // github.com/o8x/talk-mirror/internal/config.DefaultDataDir=/var/lib/talk-mirror".
 var DefaultDataDir = "./data"
 
+// Version is the build version, injected at link time, e.g. -ldflags
+// "-X github.com/o8x/talk-mirror/internal/config.Version=1.2.0". Dev builds
+// keep the default.
+var Version = "dev"
+
 // Config carries all runtime configuration resolved from flags and settings.
 type Config struct {
 	DataDir  string // -d, root data folder

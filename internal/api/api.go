@@ -42,6 +42,7 @@ func New(mgr *session.Manager, buf *buffer.Buffer, db *sqlite.Store, gate *state
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/stats", h.stats)
 	mux.HandleFunc("GET /api/stats/overview", h.overview)
+	mux.HandleFunc("GET /api/version", h.version)
 	mux.HandleFunc("GET /api/connections", h.listConnections)
 	mux.HandleFunc("GET /api/connections/{id}", h.connectionDetail)
 	mux.HandleFunc("DELETE /api/connections/{id}", h.deleteConnection)
@@ -124,6 +125,11 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- stats ---
+
+// version reports the build version injected at link time.
+func (h *Handler) version(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"version": config.Version})
+}
 
 // stats returns a compact summary of the system's current state.
 func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
