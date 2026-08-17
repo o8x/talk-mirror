@@ -103,14 +103,15 @@ func (m *Manager) Handle(ip string, port int, transport string, in model.Incomin
 		ss = m.ensureSessionLocked(clientID, cs, ip, port, protocol, now)
 	}
 	// A session that is newly created or has been inactive for a while
-	// reactivates now: record a system activation message first.
+	// reactivates now: record a system activation message first. Its timestamp
+	// is set just before the real message so it always sorts first.
 	if newlyCreated || now-ss.LastActiveAt > int64(ActiveWindow) {
 		ss.seq++
 		ss.MessageCount++
 		act := model.Record{
 			Seq:        ss.seq,
 			SessionID:  ss.ID,
-			TimeNano:   now,
+			TimeNano:   in.TimeNano - 1,
 			Tag:        []string{"system"},
 			Message:    fmt.Sprintf("Session activated by %s:%d", ip, port),
 			Data:       json.RawMessage("{}"),

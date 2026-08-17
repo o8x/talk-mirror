@@ -73,7 +73,7 @@ const COLUMN_WIDTHS: Record<ColumnKey, string> = {
   ip: '120px',
   port: '60px',
   tag: '160px',
-  message: '220px',
+  message: '320px',
   data: 'auto',
 }
 
@@ -156,7 +156,21 @@ function renderCell(key: ColumnKey, m: MessageEvent): ReactNode {
         />
       ))
     case 'message':
-      return m.message
+      return (
+        <Typography
+          variant="body2"
+          component="span"
+          sx={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: 'block',
+            width: '100%',
+          }}
+        >
+          {m.message}
+        </Typography>
+      )
     case 'data':
       return (
         <Typography
