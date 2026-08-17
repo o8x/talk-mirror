@@ -78,6 +78,10 @@ export const en = {
   'connections.export': 'Export',
   'connections.exportJson': 'Export JSON',
   'connections.exportCsv': 'Export CSV',
+  'connections.newSession': 'New session',
+  'connections.copySessionId': 'Copy session ID',
+  'connections.name': 'Name',
+  'connections.editSession': 'Edit session',
 
   'access.description':
     'Copy a ready-to-run client snippet. All examples use only the language standard library and push frames in the format |2-byte length|json| to the data port (default 3000).',
@@ -89,6 +93,8 @@ export const en = {
   'test.talkPort': 'Talk port',
   'test.key': 'Access key',
   'test.message': 'Message',
+  'test.sessionId': 'Session ID',
+  'test.sessionIdPlaceholder': 'optional; pushes to this session',
   'test.data': 'Data',
   'test.fieldKey': 'Key',
   'test.value': 'Value',
