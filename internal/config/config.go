@@ -31,8 +31,8 @@ var DefaultDataDir = "./data"
 
 // Version is the build/feature version. It defaults to the current feature
 // version and can be overridden at link time for packaged builds, e.g.
-// -ldflags "-X github.com/o8x/talk-mirror/internal/config.Version=1.4.0".
-var Version = "1.4.0"
+// -ldflags "-X github.com/o8x/talk-mirror/internal/config.Version=1.5.0".
+var Version = "1.5.0"
 
 // Config carries all runtime configuration resolved from flags and settings.
 type Config struct {
