@@ -27,6 +27,7 @@ UninstPage instfiles
 Section "Install"
   SetOutPath "$INSTDIR"
   File "talk-mirror.exe"
+  File "talk-mirror-gen-certs.sh"
 
   ; Data directory under %ProgramData% (machine-wide).
   ReadEnvStr $1 "ProgramData"
@@ -50,6 +51,7 @@ Section "Uninstall"
   nsExec::ExecToLog 'sc delete "${SERVICENAME}"'
 
   Delete "$INSTDIR\talk-mirror.exe"
+  Delete "$INSTDIR\talk-mirror-gen-certs.sh"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"
   DeleteRegKey HKLM "Software\Talk-mirror"

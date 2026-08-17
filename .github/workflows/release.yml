@@ -199,6 +199,7 @@ jobs:
         run: |
           $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
           Copy-Item -Path talk-mirror.exe -Destination packaging\windows\talk-mirror.exe -Force
+          Copy-Item -Path packaging\scripts\talk-mirror-gen-certs.sh -Destination packaging\windows\talk-mirror-gen-certs.sh -Force
           Push-Location packaging\windows
           & $nsis /DVERSION=$env:VERSION /DARCH=${{ matrix.arch }} talk-mirror.nsi
           Pop-Location

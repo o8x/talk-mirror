@@ -15,6 +15,10 @@ contents:
     dst: /usr/bin/talk-mirror
     file_info:
       mode: 0755
+  - src: packaging/scripts/talk-mirror-gen-certs.sh
+    dst: /usr/bin/talk-mirror-gen-certs.sh
+    file_info:
+      mode: 0755
   - src: packaging/linux/talk-mirror.service
     dst: /etc/systemd/system/talk-mirror.service
     file_info:

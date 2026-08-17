@@ -15,7 +15,8 @@ trap 'rm -rf "$STAGING"' EXIT
 
 cp "$BINARY" "$STAGING/talk-mirror"
 cp packaging/linux/talk-mirror.service "$STAGING/talk-mirror.service"
-chmod 0755 "$STAGING/talk-mirror"
+cp packaging/scripts/talk-mirror-gen-certs.sh "$STAGING/talk-mirror-gen-certs.sh"
+chmod 0755 "$STAGING/talk-mirror" "$STAGING/talk-mirror-gen-certs.sh"
 
 RUN_FILE="$OUT/talk-mirror-v${VERSION}_linux-${ARCH}.run"
 
@@ -38,6 +39,7 @@ trap 'rm -rf "$TMPDIR"' EXIT
 tail -n +"$ARCHIVE_LINE" "$0" | tar xz -C "$TMPDIR"
 
 install -m 0755 "$TMPDIR/talk-mirror" /usr/bin/talk-mirror
+install -m 0755 "$TMPDIR/talk-mirror-gen-certs.sh" /usr/bin/talk-mirror-gen-certs.sh
 install -m 0644 "$TMPDIR/talk-mirror.service" /etc/systemd/system/talk-mirror.service
 
 if ! id -u talk-mirror >/dev/null 2>&1; then

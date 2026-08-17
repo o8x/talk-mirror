@@ -32,7 +32,7 @@
 - **High-throughput storage** — raw messages are buffered in memory and flushed to **LevelDB** every 10 000 records or 30 s.
 - **Metadata in SQLite** — clients, sessions and settings (pure-Go driver, no cgo).
 - **Real-time WebSocket** push to the browser for messages, sessions, connections and stats.
-- **Automatic TLS** — a 3-year self-signed certificate is generated when none is configured.
+- **Automatic TLS** — a 3-year self-signed certificate is generated with openssl (or a built-in fallback) when none is configured.
 - **Kibana-like session view** with a live trend chart, brush-to-filter time ranges, expandable JSON rows and client-side pagination.
 - **Access snippets** — ready-to-run stdlib-only clients for JavaScript, Python, Go, Shell and C++.
 - **Pause** the whole system from the UI without stopping the process.
@@ -55,6 +55,21 @@ Then open `https://127.0.0.1:443` (accept the self-signed certificate on first r
 |----------|---------|
 | Web UI + WebSocket + API | `https://0.0.0.0:443` |
 | Data ingest (TCP + UDP) | `0.0.0.0:3000` |
+
+## TLS certificate
+
+When no certificate is configured (Settings → TLS), Talk-mirror generates a
+3-year self-signed certificate automatically. Packaged installs ship the
+`talk-mirror-gen-certs.sh` helper, which uses **openssl**; you can run it
+yourself at any time to (re)generate the certificate:
+
+```bash
+talk-mirror-gen-certs.sh /path/to/cert.pem /path/to/key.pem
+```
+
+> Requires `openssl` on the host. When the helper is unavailable (e.g. running
+> the bare binary built via `make build`), Talk-mirror falls back to its
+> built-in Go generator.
 
 ## Command line
 

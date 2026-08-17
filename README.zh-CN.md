@@ -32,7 +32,7 @@
 - **高吞吐存储** —— 原始消息先在内存缓冲，每 10000 条或 30 秒批量写入 **LevelDB**。
 - **元数据存 SQLite** —— 客户端、会话与设置（纯 Go 驱动，无 cgo）。
 - **实时 WebSocket** 推送消息、会话、连接与统计到浏览器。
-- **自动 TLS** —— 未配置证书时自动生成 3 年有效期的自签名证书。
+- **自动 TLS** —— 未配置证书时自动生成 3 年有效期的自签名证书（使用 openssl，或内置回退）。
 - **类 Kibana 的会话视图** —— 实时趋势图、框选时间段筛选、可展开的 JSON 行、前端分页。
 - **接入示例** —— 可直接运行的纯标准库客户端（JavaScript、Python、Go、Shell、C++）。
 - **暂停系统** —— 从界面即可暂停，无需停止进程。
@@ -54,6 +54,19 @@ make build
 |------|--------|
 | Web 界面 + WebSocket + API | `https://0.0.0.0:443` |
 | 数据摄取（TCP + UDP） | `0.0.0.0:3000` |
+
+## TLS 证书
+
+未配置证书时（设置 → TLS），Talk-mirror 会自动生成 3 年有效期的自签名证书。
+安装包内置了 `talk-mirror-gen-certs.sh` 辅助脚本，使用 **openssl** 生成；你也可以
+随时手动运行它来生成 / 重新生成证书：
+
+```bash
+talk-mirror-gen-certs.sh /path/to/cert.pem /path/to/key.pem
+```
+
+> 需要宿主机安装 `openssl`。当辅助脚本不可用时（例如通过 `make build` 直接运行
+> 裸二进制），Talk-mirror 会回退到内置的 Go 生成器。
 
 ## 命令行
 

@@ -23,6 +23,8 @@ mkdir -p "$STAGING/Library/LaunchDaemons"
 # Ad-hoc sign the binary so Gatekeeper does not reject it outright.
 codesign --force --sign - "$BINARY" >/dev/null 2>&1 || true
 cp "$BINARY" "$STAGING/usr/local/bin/talk-mirror"
+cp packaging/scripts/talk-mirror-gen-certs.sh "$STAGING/usr/local/bin/talk-mirror-gen-certs.sh"
+chmod 0755 "$STAGING/usr/local/bin/talk-mirror-gen-certs.sh"
 cp packaging/macos/com.talk-mirror.plist "$STAGING/Library/LaunchDaemons/com.talk-mirror.plist"
 cp packaging/macos/postinstall.sh "$SCRIPTS/postinstall"
 chmod 0755 "$SCRIPTS/postinstall"
