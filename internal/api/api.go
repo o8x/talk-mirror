@@ -51,6 +51,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/sessions/{id}/messages", h.sessionMessages)
 	mux.HandleFunc("GET /api/sessions/{id}/export", h.exportSession)
 	mux.HandleFunc("GET /api/sessions/{id}/buckets", h.sessionBuckets)
+	mux.HandleFunc("PATCH /api/sessions/{id}", h.updateSession)
 	mux.HandleFunc("DELETE /api/sessions/{id}", h.deleteSession)
 	mux.HandleFunc("GET /api/settings", h.getSettings)
 	mux.HandleFunc("POST /api/settings", h.saveSettings)
@@ -296,6 +297,7 @@ func (h *Handler) listConnections(w http.ResponseWriter, r *http.Request) {
 		if lc, ok := liveByIP[c.IP]; ok {
 			c = lc
 		}
+		c.Status = activeStatus(c.LastSeen)
 		list := sessByClient[c.ID]
 		active := 0
 		for _, s := range list {
@@ -321,6 +323,7 @@ func (h *Handler) connectionDetail(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "connection not found")
 		return
 	}
+	c.Status = activeStatus(c.LastSeen)
 	sessions := h.mergedSessions(id)
 	active := 0
 	for _, s := range sessions {
@@ -356,6 +359,15 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 
 // --- sessions ---
 
+// activeStatus reports whether last activity falls within the active window
+// (i.e. a message arrived in the last few seconds).
+func activeStatus(lastNano int64) string {
+	if time.Now().UnixNano()-lastNano <= int64(session.ActiveWindow) {
+		return model.StatusActive
+	}
+	return model.StatusClosed
+}
+
 // mergedSessions combines persisted sessions with live in-memory state so that
 // historical sessions remain visible even when no clients are connected.
 func (h *Handler) mergedSessions(clientID string) []model.Session {
@@ -370,6 +382,7 @@ func (h *Handler) mergedSessions(clientID string) []model.Session {
 		if ls, ok := liveByID[s.ID]; ok {
 			s = ls
 		}
+		s.Status = activeStatus(s.LastActiveAt)
 		out = append(out, s)
 	}
 	return out
@@ -393,6 +406,34 @@ func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].LastActiveAt > out[j].LastActiveAt })
 	writeJSON(w, http.StatusOK, out)
+}
+
+// updateSession renames and/or changes the port of a session.
+func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	sess := h.mgr.SessionByID(id)
+	if sess == nil {
+		if ps, err := h.db.SessionByID(id); err == nil && ps != nil {
+			sess = ps
+		}
+	}
+	if sess == nil {
+		writeErr(w, http.StatusNotFound, "session not found")
+		return
+	}
+	var body struct {
+		Name string `json:"name"`
+		Port int    `json:"port"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+	if body.Port <= 0 || body.Port > 65535 {
+		body.Port = sess.Port
+	}
+	h.mgr.UpdateSession(id, body.Name, body.Port)
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 // deleteSession removes a session and all of its message records.

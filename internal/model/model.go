@@ -31,6 +31,7 @@ type Session struct {
 	CreatedAt    int64  `json:"created_at"`
 	LastActiveAt int64  `json:"last_active_at"`
 	MessageCount int64  `json:"message_count"`
+	Name         string `json:"name"`
 }
 
 // Incoming is the wire format accepted from a remote client.

@@ -4,6 +4,10 @@ import {
   Button,
   Card,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Drawer,
   Grid,
   IconButton,
@@ -15,6 +19,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -23,6 +28,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
+import EditIcon from '@mui/icons-material/Edit'
 import ConfirmDialog from '../components/ConfirmDialog'
 import StatCard from '../components/StatCard'
 import TrendChart from '../components/TrendChart'
@@ -34,6 +40,7 @@ import {
   getConnections,
   getOverview,
   getSessions,
+  updateSession,
 } from '../api/client'
 import { ws } from '../api/ws'
 import { formatCount, formatTime } from '../utils'
@@ -59,6 +66,9 @@ export default function Connections() {
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [exportTarget, setExportTarget] = useState<Session | null>(null)
   const [copiedId, setCopiedId] = useState('')
+  const [editTarget, setEditTarget] = useState<Session | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPort, setEditPort] = useState('')
 
   // Connection overview chart uses half the configured trend point count.
   const trendPoints = useMemo(() => {
@@ -174,6 +184,32 @@ export default function Connections() {
       /* ignore */
     }
   }, [detail, refresh])
+
+  const openEdit = useCallback((s: Session) => {
+    setEditTarget(s)
+    setEditName(s.name ?? '')
+    setEditPort(String(s.port))
+  }, [])
+
+  const saveEdit = useCallback(async () => {
+    if (!editTarget) return
+    const port = parseInt(editPort, 10)
+    try {
+      await updateSession(editTarget.id, {
+        name: editName,
+        port: Number.isFinite(port) && port > 0 && port <= 65535 ? port : editTarget.port,
+      })
+      setDetailSessions((prev) =>
+        prev.map((x) =>
+          x.id === editTarget.id ? { ...x, name: editName, port: port || x.port } : x,
+        ),
+      )
+      refresh()
+    } catch {
+      /* ignore */
+    }
+    setEditTarget(null)
+  }, [editTarget, editName, editPort, refresh])
 
   const activeSessions = useMemo(
     () => connections.reduce((n, c) => n + c.active_sessions, 0),
@@ -306,6 +342,7 @@ export default function Connections() {
           <Table size="small" sx={{ mt: 1 }}>
             <TableHead>
               <TableRow>
+                <TableCell>{t('connections.name')}</TableCell>
                 <TableCell>{t('sessions.port')}</TableCell>
                 <TableCell>{t('connections.protocol')}</TableCell>
                 <TableCell>{t('common.status')}</TableCell>
@@ -317,6 +354,7 @@ export default function Connections() {
             <TableBody>
               {detailSessions.map((s) => (
                 <TableRow key={s.id}>
+                  <TableCell>{s.name || '—'}</TableCell>
                   <TableCell sx={{ fontFamily: 'monospace' }}>{s.port}</TableCell>
                   <TableCell>{s.protocol}</TableCell>
                   <TableCell>
@@ -329,6 +367,13 @@ export default function Connections() {
                   <TableCell>{formatCount(s.message_count)}</TableCell>
                   <TableCell sx={{ color: 'text.secondary' }}>{formatTime(s.last_active_at)}</TableCell>
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton
+                      size="small"
+                      title={t('connections.editSession')}
+                      onClick={() => openEdit(s)}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
                     <IconButton
                       size="small"
                       title={t('connections.copySessionId')}
@@ -362,7 +407,7 @@ export default function Connections() {
               ))}
               {detailSessions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary' }}>
+                  <TableCell colSpan={7} align="center" sx={{ color: 'text.secondary' }}>
                     {t('connections.noSessions')}
                   </TableCell>
                 </TableRow>
@@ -376,6 +421,37 @@ export default function Connections() {
         <MenuItem onClick={() => doExport('json')}>{t('connections.exportJson')}</MenuItem>
         <MenuItem onClick={() => doExport('csv')}>{t('connections.exportCsv')}</MenuItem>
       </Menu>
+
+      <Dialog open={!!editTarget} onClose={() => setEditTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t('connections.editSession')}</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            size="small"
+            label={t('connections.name')}
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            sx={{ mb: 2 }}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            type="number"
+            label={t('sessions.port')}
+            value={editPort}
+            onChange={(e) => setEditPort(e.target.value)}
+            inputProps={{ min: 1, max: 65535 }}
+            InputLabelProps={{ shrink: true }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditTarget(null)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={saveEdit}>
+            {t('common.save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <ConfirmDialog
         open={!!confirm}

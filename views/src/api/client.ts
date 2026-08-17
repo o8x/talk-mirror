@@ -71,6 +71,17 @@ export function deleteSession(id: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(`/api/sessions/${id}`, { method: 'DELETE' })
 }
 
+export function updateSession(
+  id: string,
+  body: { name?: string; port?: number },
+): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(`/api/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 export function getMessages(
   sessionId: string,
   opts: {

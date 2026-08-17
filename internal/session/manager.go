@@ -18,6 +18,9 @@ const (
 	countSyncInterval = 5 * time.Second
 	idleSweepInterval = 10 * time.Second
 	udpIdleTimeout    = 60 * time.Second
+	// ActiveWindow is how recently a client/session must have produced a
+	// message to be considered active.
+	ActiveWindow = 5 * time.Second
 )
 
 // MessageEvent is the WebSocket payload for a newly received message.
@@ -359,22 +362,43 @@ func (m *Manager) SessionByID(id string) *model.Session {
 	return nil
 }
 
-// ActiveCounts returns live active connection and session counts.
+// ActiveCounts returns the number of clients and sessions that produced a
+// message within ActiveWindow.
 func (m *Manager) ActiveCounts() (int, int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	cutoff := time.Now().Add(-ActiveWindow).UnixNano()
 	conns, sess := 0, 0
 	for _, cs := range m.clients {
-		if cs.Status == model.StatusActive {
+		if cs.LastSeen >= cutoff {
 			conns++
 		}
 	}
 	for _, ss := range m.sessions {
-		if ss.Status == model.StatusActive {
+		if ss.lastRecv.UnixNano() >= cutoff {
 			sess++
 		}
 	}
 	return conns, sess
+}
+
+// UpdateSession renames and/or changes the port of an existing session.
+func (m *Manager) UpdateSession(id, name string, port int) {
+	m.mu.Lock()
+	ss, ok := m.sessions[id]
+	if ok {
+		delete(m.keyIndex, keyOf(ss.IP, ss.Port, ss.Protocol))
+		ss.Name = name
+		ss.Port = port
+		m.keyIndex[keyOf(ss.IP, ss.Port, ss.Protocol)] = id
+	}
+	m.mu.Unlock()
+	if err := m.db.UpdateSession(id, name, port); err != nil {
+		m.log.Warn("update session", "id", id, "error", err)
+	}
+	if ok {
+		m.broadcastSession(id)
+	}
 }
 
 func (m *Manager) SyncCounts() {
