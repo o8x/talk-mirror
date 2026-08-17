@@ -90,32 +90,32 @@ func ParseFlags() (*Config, error) {
 
 // Setting keys persisted in sqlite.
 const (
-	KeyWebHost    = "web_host"
-	KeyWebPort    = "web_port"
-	KeyDataHost   = "data_host"
-	KeyDataPort   = "data_port"
-	KeyTLSCert    = "tls_cert"
-	KeyTLSKey     = "tls_key"
-	KeyThemeColor = "theme_color"
-	KeyDarkMode   = "dark_mode"
-	KeyPaused     = "paused"
-	KeyAuthKey    = "auth_key"
+	KeyWebHost     = "web_host"
+	KeyWebPort     = "web_port"
+	KeyDataHost    = "data_host"
+	KeyDataPort    = "data_port"
+	KeyTLSCert     = "tls_cert"
+	KeyTLSKey      = "tls_key"
+	KeyThemeColor  = "theme_color"
+	KeyDarkMode    = "dark_mode"
+	KeyPaused      = "paused"
+	KeyAuthKey     = "auth_key"
 	KeyTrendPoints = "trend_points"
 )
 
 // DefaultSettings returns the key/value defaults written on first run.
 func DefaultSettings() map[string]string {
 	return map[string]string{
-		KeyWebHost:    DefaultWebHost,
-		KeyWebPort:    strconv.Itoa(DefaultWebPort),
-		KeyDataHost:   DefaultDataHost,
-		KeyDataPort:   strconv.Itoa(DefaultDataPort),
-		KeyTLSCert:    "",
-		KeyTLSKey:     "",
-		KeyThemeColor: DefaultThemeColor,
-		KeyDarkMode:   strconv.FormatBool(DefaultDarkMode),
-		KeyPaused:     strconv.FormatBool(DefaultPaused),
-		KeyAuthKey:    DefaultAuthKey,
+		KeyWebHost:     DefaultWebHost,
+		KeyWebPort:     strconv.Itoa(DefaultWebPort),
+		KeyDataHost:    DefaultDataHost,
+		KeyDataPort:    strconv.Itoa(DefaultDataPort),
+		KeyTLSCert:     "",
+		KeyTLSKey:      "",
+		KeyThemeColor:  DefaultThemeColor,
+		KeyDarkMode:    strconv.FormatBool(DefaultDarkMode),
+		KeyPaused:      strconv.FormatBool(DefaultPaused),
+		KeyAuthKey:     DefaultAuthKey,
 		KeyTrendPoints: strconv.Itoa(DefaultTrendPoints),
 	}
 }
