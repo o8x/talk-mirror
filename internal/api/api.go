@@ -45,6 +45,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/version", h.version)
 	mux.HandleFunc("GET /api/connections", h.listConnections)
 	mux.HandleFunc("GET /api/connections/{id}", h.connectionDetail)
+	mux.HandleFunc("POST /api/connections/{id}/sessions", h.createSession)
 	mux.HandleFunc("DELETE /api/connections/{id}", h.deleteConnection)
 	mux.HandleFunc("GET /api/sessions", h.listSessions)
 	mux.HandleFunc("GET /api/sessions/{id}/messages", h.sessionMessages)
@@ -332,6 +333,25 @@ func (h *Handler) connectionDetail(w http.ResponseWriter, r *http.Request) {
 		SessionCount:   len(sessions),
 		ActiveSessions: active,
 	})
+}
+
+// createSession creates a new session for a connection with a fresh ID and a
+// random port, so clients can push data to it by session_id.
+func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	c := h.mgr.ClientByID(id)
+	if c == nil {
+		if pc, err := h.db.ClientByID(id); err == nil && pc != nil {
+			c = pc
+		}
+	}
+	if c == nil {
+		writeErr(w, http.StatusNotFound, "connection not found")
+		return
+	}
+	ss := h.mgr.CreateNamedSession(c.ID, c.IP, "http", time.Now().UnixNano())
+	h.log.Info("session created for connection", "id", ss.ID, "ip", c.IP, "port", ss.Port)
+	writeJSON(w, http.StatusOK, ss.Session)
 }
 
 // --- sessions ---

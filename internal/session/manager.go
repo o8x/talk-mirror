@@ -81,7 +81,14 @@ func (m *Manager) Handle(ip string, port int, transport string, in model.Incomin
 
 	m.mu.Lock()
 	clientID, cs := m.ensureClientLocked(ip, now)
-	ss := m.ensureSessionLocked(clientID, cs, ip, port, protocol, now)
+	var ss *SessionState
+	if in.SessionID != "" {
+		// A client-provided session_id pins the message to that exact session,
+		// ignoring the source port.
+		ss = m.ensureNamedSessionLocked(clientID, ip, protocol, in.SessionID, now)
+	} else {
+		ss = m.ensureSessionLocked(clientID, cs, ip, port, protocol, now)
+	}
 	ss.seq++
 	ss.MessageCount++
 	ss.lastRecv = time.Now()
@@ -181,6 +188,76 @@ func (m *Manager) ensureSessionLocked(clientID string, cs *ClientState, ip strin
 	m.log.Info("session created", "id", id, "ip", ip, "port", port, "protocol", protocol)
 	m.hub.Broadcast("session", ss.Session)
 	return ss
+}
+
+// ensureNamedSessionLocked returns the session identified by sessionID,
+// creating it on first sight (with a random port) when it does not exist yet.
+// Lookup is by session_id only, ignoring the source port and address.
+func (m *Manager) ensureNamedSessionLocked(clientID, ip, protocol, sessionID string, now int64) *SessionState {
+	if ss, ok := m.sessions[sessionID]; ok {
+		ss.Status = model.StatusActive
+		ss.lastRecv = time.Now()
+		return ss
+	}
+	port := 0
+	if s, err := m.db.SessionByID(sessionID); err == nil && s != nil {
+		clientID = s.ClientID
+		ip = s.IP
+		port = s.Port
+		protocol = s.Protocol
+	}
+	if port == 0 {
+		port = m.randomPortLocked(ip, protocol)
+	}
+	ss := &SessionState{
+		Session: model.Session{
+			ID:           sessionID,
+			ClientID:     clientID,
+			IP:           ip,
+			Port:         port,
+			Protocol:     protocol,
+			Status:       model.StatusActive,
+			CreatedAt:    now,
+			LastActiveAt: now,
+		},
+		lastRecv: time.Now(),
+	}
+	m.sessions[sessionID] = ss
+	m.keyIndex[keyOf(ip, port, protocol)] = sessionID
+	if cs, ok := m.clients[ip]; ok {
+		cs.sessions[sessionID] = struct{}{}
+	}
+	_ = m.db.UpsertSession(&ss.Session)
+	m.log.Info("session created", "id", sessionID, "ip", ip, "port", port, "protocol", protocol)
+	m.hub.Broadcast("session", ss.Session)
+	return ss
+}
+
+// CreateNamedSession creates a new session with a fresh ID and a random port so
+// clients can push data to it by session_id.
+func (m *Manager) CreateNamedSession(clientID, ip, protocol string, now int64) *SessionState {
+	id := newID()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.ensureNamedSessionLocked(clientID, ip, protocol, id, now)
+}
+
+// randomPortLocked picks an unused high port for a named session.
+func (m *Manager) randomPortLocked(ip, protocol string) int {
+	var b [2]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return 0
+	}
+	n := (int(b[0]) << 8) | int(b[1])
+	port := 1024 + n%64511
+	for i := 0; i < 100 && m.keyIndex[keyOf(ip, port, protocol)] != ""; i++ {
+		if _, err := rand.Read(b[:]); err != nil {
+			break
+		}
+		n = (int(b[0]) << 8) | int(b[1])
+		port = 1024 + n%64511
+	}
+	return port
 }
 
 func (m *Manager) broadcastSession(id string) {

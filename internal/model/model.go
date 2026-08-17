@@ -35,11 +35,12 @@ type Session struct {
 
 // Incoming is the wire format accepted from a remote client.
 type Incoming struct {
-	TimeNano int64           `json:"time_nano"`
-	Tag      []string        `json:"tag"`
-	Message  string          `json:"message"`
-	Data     json.RawMessage `json:"data"`
-	Protocol string          `json:"protocol"`
+	TimeNano  int64           `json:"time_nano"`
+	SessionID string          `json:"session_id"`
+	Tag       []string        `json:"tag"`
+	Message   string          `json:"message"`
+	Data      json.RawMessage `json:"data"`
+	Protocol  string          `json:"protocol"`
 }
 
 // Record is a stored message attached to a session.

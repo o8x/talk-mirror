@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Box,
+  Button,
   Card,
   Chip,
   Drawer,
@@ -16,13 +17,17 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
 import ConfirmDialog from '../components/ConfirmDialog'
 import StatCard from '../components/StatCard'
 import TrendChart from '../components/TrendChart'
 import {
+  createSession,
   deleteConnection,
   deleteSession,
   exportSession,
@@ -53,6 +58,7 @@ export default function Connections() {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [exportTarget, setExportTarget] = useState<Session | null>(null)
+  const [copiedId, setCopiedId] = useState('')
 
   // Connection overview chart uses half the configured trend point count.
   const trendPoints = useMemo(() => {
@@ -147,6 +153,27 @@ export default function Connections() {
     },
     [exportTarget],
   )
+
+  const copySessionId = useCallback(async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id)
+    } catch {
+      /* ignore */
+    }
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(''), 1500)
+  }, [])
+
+  const handleNewSession = useCallback(async () => {
+    if (!detail) return
+    try {
+      const s = await createSession(detail.id)
+      setDetailSessions((prev) => [s, ...prev.filter((x) => x.id !== s.id)])
+      refresh()
+    } catch {
+      /* ignore */
+    }
+  }, [detail, refresh])
 
   const activeSessions = useMemo(
     () => connections.reduce((n, c) => n + c.active_sessions, 0),
@@ -257,14 +284,19 @@ export default function Connections() {
         anchor="right"
         open={!!detail}
         onClose={() => setDetail(null)}
-        sx={{ '& .MuiDrawer-paper': { width: { xs: '100%', sm: 560 } } }}
+        sx={{ '& .MuiDrawer-paper': { width: { xs: '100%', sm: 1000 } } }}
       >
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
             <Typography variant="h6">{detail ? t('connections.dialogTitle', { ip: detail.ip }) : ''}</Typography>
-            <IconButton onClick={() => setDetail(null)}>
-              <CloseIcon />
-            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Button size="small" startIcon={<AddIcon />} onClick={handleNewSession}>
+                {t('connections.newSession')}
+              </Button>
+              <IconButton onClick={() => setDetail(null)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
           </Box>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {t('connections.firstSeen')} {detail ? formatTime(detail.first_seen) : ''} ·{' '}
@@ -297,6 +329,17 @@ export default function Connections() {
                   <TableCell>{formatCount(s.message_count)}</TableCell>
                   <TableCell sx={{ color: 'text.secondary' }}>{formatTime(s.last_active_at)}</TableCell>
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton
+                      size="small"
+                      title={t('connections.copySessionId')}
+                      onClick={() => copySessionId(s.id)}
+                    >
+                      {copiedId === s.id ? (
+                        <CheckIcon fontSize="small" color="success" />
+                      ) : (
+                        <ContentCopyIcon fontSize="small" />
+                      )}
+                    </IconButton>
                     <IconButton
                       size="small"
                       title={t('connections.export')}

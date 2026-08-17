@@ -63,6 +63,10 @@ export function deleteConnection(id: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(`/api/connections/${id}`, { method: 'DELETE' })
 }
 
+export function createSession(clientId: string): Promise<Session> {
+  return request<Session>(`/api/connections/${clientId}/sessions`, { method: 'POST' })
+}
+
 export function deleteSession(id: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(`/api/sessions/${id}`, { method: 'DELETE' })
 }

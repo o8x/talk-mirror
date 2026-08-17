@@ -80,6 +80,8 @@ export const zh: Dict = {
   'connections.export': '导出',
   'connections.exportJson': '导出 JSON',
   'connections.exportCsv': '导出 CSV',
+  'connections.newSession': '新建会话',
+  'connections.copySessionId': '复制会话 ID',
 
   'access.description':
     '复制可直接运行的客户端代码。所有示例仅使用各语言标准库，以 |2字节长度|json| 的帧格式推送到数据端口（默认 3000）。',
