@@ -17,6 +17,7 @@ export interface Session {
   created_at: number
   last_active_at: number
   message_count: number
+  name: string
 }
 
 export interface RecordItem {

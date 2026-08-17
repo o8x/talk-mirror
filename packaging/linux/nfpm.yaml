@@ -23,6 +23,10 @@ contents:
     dst: /etc/systemd/system/talk-mirror.service
     file_info:
       mode: 0644
+  - src: packaging/linux/talk-mirror.default
+    dst: /etc/default/talk-mirror
+    file_info:
+      mode: 0644
 
 scripts:
   postinstall: packaging/linux/postinstall.sh

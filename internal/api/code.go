@@ -127,55 +127,98 @@ talk_mirror_talk() {
 }
 `,
 
-	"c++": `// C++17 (stdlib only) - TalkMirror client class.
+	"c++": `// C++17 - TalkMirror client class (requires nlohmann/json).
+#include "nlohmann/json.hpp"
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <atomic>
 #include <cstdint>
 #include <map>
-#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
+class talk_mirror_message {
+  public:
+    std::string message;
+    std::vector<std::string> tag;
+    std::map<std::string, std::string> data;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(talk_mirror_message, tag, message, data);
+};
+
 class talk_mirror {
-public:
-    talk_mirror(const std::string& address, int port) {
-        sock_ = socket(AF_INET, SOCK_STREAM, 0);
-        sockaddr_in addr{};
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-        inet_pton(AF_INET, address.c_str(), &addr.sin_addr);
-        connect(sock_, (sockaddr*)&addr, sizeof(addr));
+    std::atomic<int> sock_{-1};
+    std::string ip_{"127.0.0.1"};
+    uint16_t port_{3000};
+
+    talk_mirror() = default;
+
+    static talk_mirror &get() {
+        static talk_mirror m;
+        return m;
     }
 
-    void talk(const std::string& message,
-              const std::vector<std::string>& tag,
-              const std::map<std::string, std::string>& data = {}) {
-        std::ostringstream json;
-        json << R"({"tag":[)";
-        for (size_t i = 0; i < tag.size(); i++) {
-            if (i) json << ',';
-            json << '"' << tag[i] << '"';
+    void connect() {
+        if (int expected = -1; !sock_.compare_exchange_strong(expected, -2)) {
+            return;
         }
-        json << R"(],"message":")" << message << R"(","data":{)";
-        bool first = true;
-        for (const auto& [k, v] : data) {
-            if (!first) json << ',';
-            first = false;
-            json << '"' << k << R"(":")" << v << '"';
-        }
-        json << R"(}})";
 
-        const std::string body = json.str();
-        uint16_t len = htons(static_cast<uint16_t>(body.size()));
-        send(sock_, &len, 2, 0);
-        send(sock_, body.data(), body.size(), 0);
+        if (const int fd = socket(AF_INET, SOCK_STREAM, 0); fd >= 0) {
+            sockaddr_in addr{};
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(port_);
+            if (inet_pton(AF_INET, ip_.c_str(), &addr.sin_addr) == 1 &&
+                ::connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0) {
+                sock_.store(fd);
+                return;
+            }
+
+            ::close(fd);
+        }
+
+        sock_.store(-1);
     }
 
-private:
-    int sock_;
+  public:
+    static void init(const std::string &ip, uint16_t port) {
+        talk_mirror &m = get();
+        if (const int fd = m.sock_.exchange(-1); fd >= 0) {
+            ::close(fd);
+        }
+
+        m.ip_ = ip;
+        m.port_ = port;
+        m.connect();
+    }
+
+    static void close() {
+        if (const int fd = get().sock_.exchange(-1); fd >= 0) {
+            ::close(fd);
+        }
+    }
+
+    static void talk(const talk_mirror_message &msg) {
+        talk_mirror &m = get();
+        m.connect();
+        const int fd = m.sock_.load();
+        if (fd < 0) {
+            return;
+        }
+
+        const std::string body = nlohmann::json(msg).dump();
+        if (body.size() > 65535) {
+            throw std::runtime_error("talk_mirror: frame too large");
+        }
+
+        const uint16_t len = htons(static_cast<uint16_t>(body.size()));
+        send(fd, &len, 2, 0);
+        send(fd, body.data(), body.size(), 0);
+    }
 };
 `,
 }
@@ -211,11 +254,11 @@ talk_mirror_init 127.0.0.1 3000
 talk_mirror_talk "hello" '["info"]' '{"foo":"bar"}'
 `,
 
-	"c++": `// C++17 (stdlib only) - usage.
+	"c++": `// C++17 - usage.
 int main() {
-    talk_mirror tm("127.0.0.1", 3000);
-
-    tm.talk("hello", {"info"}, {{"foo", "bar"}});
+    talk_mirror::init("127.0.0.1", 3000);
+    talk_mirror::talk(talk_mirror_message{"hello", {"info"}, {{"foo", "bar"}}});
+    talk_mirror::close();
     return 0;
 }
 `,

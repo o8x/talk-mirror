@@ -63,8 +63,23 @@ export function deleteConnection(id: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(`/api/connections/${id}`, { method: 'DELETE' })
 }
 
+export function createSession(clientId: string): Promise<Session> {
+  return request<Session>(`/api/connections/${clientId}/sessions`, { method: 'POST' })
+}
+
 export function deleteSession(id: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(`/api/sessions/${id}`, { method: 'DELETE' })
+}
+
+export function updateSession(
+  id: string,
+  body: { name?: string; port?: number },
+): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(`/api/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 }
 
 export function getMessages(
@@ -147,7 +162,7 @@ export function getCode(lang: string): Promise<{ lang: string; class: string; ap
 
 export function sendTestMessage(
   baseUrl: string,
-  body: { tag?: string[]; message: string; data?: Record<string, string> },
+  body: { tag?: string[]; message: string; data?: Record<string, string>; session_id?: string },
   key: string,
 ): Promise<{ ok: boolean; ip: string; port: number }> {
   return request<{ ok: boolean; ip: string; port: number }>(`${baseUrl}/api/ingest`, {

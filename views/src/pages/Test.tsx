@@ -32,6 +32,7 @@ interface FormState {
   talkPort: string
   key: string
   message: string
+  sessionId: string
   fields: Field[]
 }
 
@@ -56,7 +57,13 @@ function loadForm(): Partial<FormState> {
   return {}
 }
 
-function genGo(address: string, talkPort: string, message: string, data: Record<string, string>): string {
+function genGo(
+  address: string,
+  talkPort: string,
+  sessionId: string,
+  message: string,
+  data: Record<string, string>,
+): string {
   const msgLit = JSON.stringify(message)
   const entries = Object.entries(data)
   const dataLit = entries.length
@@ -64,6 +71,7 @@ function genGo(address: string, talkPort: string, message: string, data: Record<
       entries.map(([k, v]) => `            "${k}": ${JSON.stringify(v)},`).join('\n') +
       '\n        }'
     : 'map[string]any{}'
+  const sessionLit = sessionId ? `        "session_id": ${JSON.stringify(sessionId)},` : ''
   return [
     'package main',
     '',
@@ -84,6 +92,7 @@ function genGo(address: string, talkPort: string, message: string, data: Record<
     '',
     '    msg := map[string]any{',
     '        "time_nano": time.Now().UnixNano(),',
+    sessionLit,
     '        "tag":       []string{"test"},',
     `        "message":   ${msgLit},`,
     `        "data":      ${dataLit},`,
@@ -99,7 +108,13 @@ function genGo(address: string, talkPort: string, message: string, data: Record<
   ].join('\n')
 }
 
-function genPython(address: string, talkPort: string, message: string, data: Record<string, string>): string {
+function genPython(
+  address: string,
+  talkPort: string,
+  sessionId: string,
+  message: string,
+  data: Record<string, string>,
+): string {
   const msgLit = JSON.stringify(message)
   const port = parseInt(talkPort, 10) || 3000
   const dataLit =
@@ -108,6 +123,7 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
       .map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`)
       .join(', ') +
     '}'
+  const sessionLit = sessionId ? `    "session_id": ${JSON.stringify(sessionId)},\n` : ''
   return [
     'import json',
     'import socket',
@@ -117,6 +133,7 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
     `sock = socket.create_connection((${JSON.stringify(address)}, ${port}))`,
     'msg = {',
     '    "time_nano": time.time_ns(),',
+    sessionLit ? sessionLit.trimEnd() : '',
     '    "tag": ["test"],',
     `    "message": ${msgLit},`,
     `    "data": ${dataLit},`,
@@ -128,7 +145,13 @@ function genPython(address: string, talkPort: string, message: string, data: Rec
   ].join('\n')
 }
 
-function genCpp(address: string, talkPort: string, message: string, data: Record<string, string>): string {
+function genCpp(
+  address: string,
+  talkPort: string,
+  sessionId: string,
+  message: string,
+  data: Record<string, string>,
+): string {
   const port = parseInt(talkPort, 10) || 3000
   const entries = Object.entries(data)
   const dataStr = entries.length
@@ -137,6 +160,9 @@ function genCpp(address: string, talkPort: string, message: string, data: Record
   const cppLit = (s: string) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
   const msgLit = cppLit(JSON.stringify(message))
   const dataLit = cppLit(dataStr)
+  const sessionLit = sessionId
+    ? `    json << R"(,"session_id":)" << ${cppLit(JSON.stringify(sessionId))};`
+    : ''
   return [
     '// C++17 (stdlib only) - TalkMirror test client',
     '#include <arpa/inet.h>',
@@ -162,6 +188,7 @@ function genCpp(address: string, talkPort: string, message: string, data: Record
     '',
     '    std::ostringstream json;',
     '    json << R"({"time_nano":)" << now;',
+    sessionLit,
     '    json << R"(,"tag":["test"])";',
     '    json << R"(,"message":)" << ' + msgLit + ';',
     '    json << R"(,"data":)" << ' + dataLit + ';',
@@ -187,6 +214,7 @@ export default function Test() {
   const [talkPort, setTalkPort] = useState(() => saved.talkPort ?? '3000')
   const [key, setKey] = useState(() => saved.key ?? getStoredKey())
   const [message, setMessage] = useState(() => saved.message ?? 'hello')
+  const [sessionId, setSessionId] = useState(() => saved.sessionId ?? '')
   const [fields, setFields] = useState<Field[]>(() =>
     saved.fields?.length ? saved.fields : [{ key: '', value: '' }],
   )
@@ -196,8 +224,8 @@ export default function Test() {
   const apiPort = window.location.port || '443'
 
   useEffect(() => {
-    localStorage.setItem(FORM_KEY, JSON.stringify({ address, talkPort, key, message, fields }))
-  }, [address, talkPort, key, message, fields])
+    localStorage.setItem(FORM_KEY, JSON.stringify({ address, talkPort, key, message, sessionId, fields }))
+  }, [address, talkPort, key, message, sessionId, fields])
 
   const setField = (i: number, k: 'key' | 'value', v: string) => {
     setFields((prev) => prev.map((f, idx) => (idx === i ? { ...f, [k]: v } : f)))
@@ -215,13 +243,17 @@ export default function Test() {
     return d
   }, [fields])
 
-  const preview = useMemo(() => JSON.stringify({ tag: TAG, message, data }, null, 2), [message, data])
+  const preview = useMemo(() => {
+    const payload: Record<string, unknown> = { tag: TAG, message, data }
+    if (sessionId.trim()) payload.session_id = sessionId.trim()
+    return JSON.stringify(payload, null, 2)
+  }, [sessionId, message, data])
 
   const generated = useMemo(() => {
-    if (lang === 'go') return genGo(address, talkPort, message, data)
-    if (lang === 'cpp') return genCpp(address, talkPort, message, data)
-    return genPython(address, talkPort, message, data)
-  }, [lang, address, talkPort, message, data])
+    if (lang === 'go') return genGo(address, talkPort, sessionId, message, data)
+    if (lang === 'cpp') return genCpp(address, talkPort, sessionId, message, data)
+    return genPython(address, talkPort, sessionId, message, data)
+  }, [lang, address, talkPort, sessionId, message, data])
 
   const run = async () => {
     setRunning(true)
@@ -229,7 +261,13 @@ export default function Test() {
     const baseUrl = `https://${address.trim()}:${apiPort}`
     const started = performance.now()
     try {
-      const res = await sendTestMessage(baseUrl, { tag: TAG, message, data }, key.trim())
+      const body: { tag: string[]; message: string; data: Record<string, string>; session_id?: string } = {
+        tag: TAG,
+        message,
+        data,
+      }
+      if (sessionId.trim()) body.session_id = sessionId.trim()
+      const res = await sendTestMessage(baseUrl, body, key.trim())
       setResult({ ok: true, ms: Math.round(performance.now() - started), ip: res.ip, port: res.port })
     } catch (e) {
       setResult({ ok: false, ms: Math.round(performance.now() - started), error: String(e) })
@@ -287,6 +325,17 @@ export default function Test() {
                   onChange={(e) => setMessage(e.target.value)}
                   multiline
                   minRows={2}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label={t('test.sessionId')}
+                  value={sessionId}
+                  onChange={(e) => setSessionId(e.target.value)}
+                  placeholder={t('test.sessionIdPlaceholder')}
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>

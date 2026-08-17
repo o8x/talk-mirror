@@ -51,6 +51,7 @@ func (s *Store) migrate() error {
 			created_at INTEGER NOT NULL,
 			last_active_at INTEGER NOT NULL,
 			message_count INTEGER NOT NULL DEFAULT 0,
+			name TEXT NOT NULL DEFAULT '',
 			UNIQUE (ip, port, protocol)
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_sessions_client ON sessions(client_id)`,
@@ -64,7 +65,33 @@ func (s *Store) migrate() error {
 			return fmt.Errorf("migrate: %w", err)
 		}
 	}
+	// Migration for databases created before the name column existed.
+	if !s.hasColumn("sessions", "name") {
+		if _, err := s.db.Exec(`ALTER TABLE sessions ADD COLUMN name TEXT NOT NULL DEFAULT ''`); err != nil {
+			return fmt.Errorf("migrate add name: %w", err)
+		}
+	}
 	return nil
+}
+
+func (s *Store) hasColumn(table, column string) bool {
+	rows, err := s.db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid, notnull, pk int
+		var cname, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &cname, &ctype, &notnull, &dflt, &pk); err != nil {
+			return false
+		}
+		if cname == column {
+			return true
+		}
+	}
+	return false
 }
 
 // UpsertClient inserts a client on first sight or refreshes its activity.
@@ -118,37 +145,43 @@ func (s *Store) ListClients() ([]model.Client, error) {
 
 // UpsertSession inserts a session on first sight or refreshes its activity.
 func (s *Store) UpsertSession(sess *model.Session) error {
-	_, err := s.db.Exec(`INSERT INTO sessions (id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count)
-		VALUES (?, ?, ?, ?, ?, 'active', ?, ?, 0)
+	_, err := s.db.Exec(`INSERT INTO sessions (id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count, name)
+		VALUES (?, ?, ?, ?, ?, 'active', ?, ?, 0, ?)
 		ON CONFLICT(ip, port, protocol) DO UPDATE SET last_active_at = excluded.last_active_at, status = 'active'`,
-		sess.ID, sess.ClientID, sess.IP, sess.Port, sess.Protocol, sess.CreatedAt, sess.LastActiveAt)
+		sess.ID, sess.ClientID, sess.IP, sess.Port, sess.Protocol, sess.CreatedAt, sess.LastActiveAt, sess.Name)
+	return err
+}
+
+// UpdateSession renames and/or changes the port of a session.
+func (s *Store) UpdateSession(id string, name string, port int) error {
+	_, err := s.db.Exec(`UPDATE sessions SET name = ?, port = ? WHERE id = ?`, name, port, id)
 	return err
 }
 
 func (s *Store) SessionByKey(ip string, port int, protocol string) (*model.Session, error) {
-	row := s.db.QueryRow(`SELECT id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count
+	row := s.db.QueryRow(`SELECT id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count, name
 		FROM sessions WHERE ip = ? AND port = ? AND protocol = ?`, ip, port, protocol)
 	var sess model.Session
 	if err := row.Scan(&sess.ID, &sess.ClientID, &sess.IP, &sess.Port, &sess.Protocol,
-		&sess.Status, &sess.CreatedAt, &sess.LastActiveAt, &sess.MessageCount); err != nil {
+		&sess.Status, &sess.CreatedAt, &sess.LastActiveAt, &sess.MessageCount, &sess.Name); err != nil {
 		return nil, err
 	}
 	return &sess, nil
 }
 
 func (s *Store) SessionByID(id string) (*model.Session, error) {
-	row := s.db.QueryRow(`SELECT id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count
+	row := s.db.QueryRow(`SELECT id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count, name
 		FROM sessions WHERE id = ?`, id)
 	var sess model.Session
 	if err := row.Scan(&sess.ID, &sess.ClientID, &sess.IP, &sess.Port, &sess.Protocol,
-		&sess.Status, &sess.CreatedAt, &sess.LastActiveAt, &sess.MessageCount); err != nil {
+		&sess.Status, &sess.CreatedAt, &sess.LastActiveAt, &sess.MessageCount, &sess.Name); err != nil {
 		return nil, err
 	}
 	return &sess, nil
 }
 
 func (s *Store) ListSessions(clientID string) ([]model.Session, error) {
-	q := `SELECT id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count FROM sessions`
+	q := `SELECT id, client_id, ip, port, protocol, status, created_at, last_active_at, message_count, name FROM sessions`
 	var args []any
 	if clientID != "" {
 		q += ` WHERE client_id = ?`
@@ -164,7 +197,7 @@ func (s *Store) ListSessions(clientID string) ([]model.Session, error) {
 	for rows.Next() {
 		var sess model.Session
 		if err := rows.Scan(&sess.ID, &sess.ClientID, &sess.IP, &sess.Port, &sess.Protocol,
-			&sess.Status, &sess.CreatedAt, &sess.LastActiveAt, &sess.MessageCount); err != nil {
+			&sess.Status, &sess.CreatedAt, &sess.LastActiveAt, &sess.MessageCount, &sess.Name); err != nil {
 			return nil, err
 		}
 		out = append(out, sess)

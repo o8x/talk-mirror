@@ -7,6 +7,7 @@ import {
   Chip,
   Collapse,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   List,
@@ -18,6 +19,7 @@ import {
   Popover,
   Select,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -63,6 +65,18 @@ const ALL_COLUMNS: ColumnKey[] = ['seq', 'time', 'ip', 'port', 'tag', 'message',
 const DEFAULT_ORDER: ColumnKey[] = ['seq', 'time', 'ip', 'port', 'tag', 'message', 'data']
 const COL_KEY = 'talk-mirror-session-columns'
 
+// Compact fixed widths for the non-data columns; the data column absorbs all
+// remaining table width.
+const COLUMN_WIDTHS: Record<ColumnKey, string> = {
+  seq: '60px',
+  time: '150px',
+  ip: '120px',
+  port: '60px',
+  tag: '160px',
+  message: '220px',
+  data: 'auto',
+}
+
 function loadOrder(): ColumnKey[] {
   try {
     const raw = localStorage.getItem(COL_KEY)
@@ -78,12 +92,16 @@ function loadOrder(): ColumnKey[] {
 }
 
 const ranges = [
-  { label: 'Live', seconds: 0 },
   { label: '5m', seconds: 300 },
   { label: '15m', seconds: 900 },
   { label: '1h', seconds: 3600 },
   { label: '1d', seconds: 86400 },
 ]
+
+// sessionLabel renders a session as its optional name followed by address:port.
+function sessionLabel(s: Session): string {
+  return s.name ? `${s.name}（${s.ip}:${s.port}）` : `${s.ip}:${s.port}/${s.protocol}`
+}
 
 function JsonBlock({ value }: { value: unknown }) {
   const darkMode = useStore((s) => s.darkMode)
@@ -149,8 +167,8 @@ function renderCell(key: ColumnKey, m: MessageEvent): ReactNode {
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            display: 'inline-block',
-            maxWidth: 320,
+            display: 'block',
+            width: '100%',
             verticalAlign: 'middle',
           }}
         >
@@ -171,6 +189,7 @@ export default function Sessions() {
   const [messages, setMessages] = useState<MessageEvent[]>([])
   const [total, setTotal] = useState(0)
   const [rangeSeconds, setRangeSeconds] = useState(0)
+  const [live, setLive] = useState(true)
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(20)
   const [trendData, setTrendData] = useState<BucketPoint[]>([])
@@ -246,15 +265,17 @@ export default function Sessions() {
   }, [refreshSessions])
 
   useEffect(() => {
-    ws.subscribe(selSession, '')
-  }, [selSession])
+    if (live) {
+      ws.subscribe(selSession, '')
+    } else {
+      ws.subscribe('', '')
+    }
+  }, [selSession, live])
 
-  // fetch table data when selection, range, pagination or filters change
+  // fetch table data when selection, range, pagination, filters or live change
   useEffect(() => {
     let alive = true
-    if (!selSession) {
-      setMessages([])
-      setTotal(0)
+    if (!live || !selSession) {
       return
     }
     const filterOpts = {
@@ -285,24 +306,23 @@ export default function Sessions() {
     return () => {
       alive = false
     }
-  }, [selSession, rangeSeconds, page, pageSize, filters])
+  }, [selSession, rangeSeconds, page, pageSize, filters, live])
 
   // fetch trend buckets from the backend (full history, not just the in-memory list)
   useEffect(() => {
-    if (!selSession) {
-      setTrendData([])
+    if (!live || !selSession) {
       return
     }
     const seconds = rangeSeconds > 0 ? rangeSeconds : 300
     getSessionBuckets(selSession, { seconds })
       .then(setTrendData)
       .catch(() => setTrendData([]))
-  }, [selSession, rangeSeconds])
+  }, [selSession, rangeSeconds, live])
 
   // Live-mode polling fallback: keep the list and trend fresh even if the
   // WebSocket push is unavailable.
   useEffect(() => {
-    if (!selSession || rangeSeconds > 0) return
+    if (!live || !selSession || rangeSeconds > 0) return
     const timer = window.setInterval(() => {
       getMessages(selSession, {
         q: filters.q || undefined,
@@ -321,12 +341,13 @@ export default function Sessions() {
         .catch(() => {})
     }, 1000)
     return () => window.clearInterval(timer)
-  }, [selSession, rangeSeconds, filters])
+  }, [selSession, rangeSeconds, filters, live])
 
   // realtime push
   useEffect(() => {
     const off = ws.on((ev) => {
       if (ev.type !== 'message') return
+      if (!live) return
       const m = ev.data as MessageEvent
       if (rangeSeconds > 0) return
       if (hasFilters(filters)) return
@@ -335,7 +356,7 @@ export default function Sessions() {
       setTotal((n) => n + 1)
     })
     return off
-  }, [selSession, rangeSeconds, filters])
+  }, [selSession, rangeSeconds, filters, live])
 
   const filteredSessions = useMemo(() => {
     if (!selConn) return sessions
@@ -350,7 +371,7 @@ export default function Sessions() {
 
   const handleBrush = useCallback(
     (startNs: number, endNs: number) => {
-      if (!selSession) return
+      if (!live || !selSession) return
       setPage(0)
       getMessages(selSession, {
         q: filters.q || undefined,
@@ -368,7 +389,7 @@ export default function Sessions() {
         })
         .catch(() => {})
     },
-    [selSession, pageSize, filters],
+    [selSession, pageSize, filters, live],
   )
 
   const toggleColumn = (key: ColumnKey) => {
@@ -430,16 +451,23 @@ export default function Sessions() {
             <MenuItem value="">{t('common.none')}</MenuItem>
             {filteredSessions.map((s) => (
               <MenuItem key={s.id} value={s.id}>
-                {s.ip}:{s.port}/{s.protocol}
+                {sessionLabel(s)}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
+        <FormControlLabel
+          control={
+            <Switch size="small" checked={live} onChange={(e) => setLive(e.target.checked)} />
+          }
+          label={t('sessions.live')}
+          sx={{ ml: 0.5 }}
+        />
         <Stack direction="row" spacing={0.5}>
           {ranges.map((r) => (
             <Chip
               key={r.label}
-              label={r.label === 'Live' ? t('sessions.live') : r.label}
+              label={r.label}
               size="small"
               color={rangeSeconds === r.seconds ? 'primary' : 'default'}
               variant={rangeSeconds === r.seconds ? 'filled' : 'outlined'}
@@ -578,12 +606,14 @@ export default function Sessions() {
 
       <Card>
         <TableContainer>
-          <Table size="small">
+          <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHead>
               <TableRow>
-                <TableCell padding="checkbox" />
+                <TableCell padding="checkbox" sx={{ width: 40 }} />
                 {order.map((key) => (
-                  <TableCell key={key}>{columnLabel[key]}</TableCell>
+                  <TableCell key={key} sx={{ width: COLUMN_WIDTHS[key], px: 1.25, whiteSpace: 'nowrap' }}>
+                    {columnLabel[key]}
+                  </TableCell>
                 ))}
               </TableRow>
             </TableHead>
@@ -630,7 +660,9 @@ const Row = memo(function Row({ m, order }: { m: MessageEvent; order: ColumnKey[
           </IconButton>
         </TableCell>
         {order.map((key) => (
-          <TableCell key={key}>{renderCell(key, m)}</TableCell>
+          <TableCell key={key} sx={{ px: 1.25 }}>
+            {renderCell(key, m)}
+          </TableCell>
         ))}
       </TableRow>
       <TableRow>
