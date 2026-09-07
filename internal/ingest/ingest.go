@@ -1,6 +1,8 @@
 package ingest
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"io"
@@ -85,21 +87,77 @@ func (s *Server) handleTCP(conn net.Conn) {
 		s.log.Info("tcp connection closed", "ip", ip, "port", port)
 	}()
 
+	r := bufio.NewReaderSize(conn, 64*1024)
+
+	// Peek the first byte to pick the framing: newline-delimited JSON records
+	// always begin with '{', while the binary protocol starts with a 2-byte
+	// big-endian length (whose high byte is 0x00 for messages under 31 KB).
+	peek, err := r.Peek(1)
+	if err != nil {
+		return
+	}
+	if peek[0] == '{' {
+		s.newlineLoop(ip, port, model.ProtocolTCP, r)
+		return
+	}
 	for {
-		frame, err := readFrame(conn)
+		frame, err := readFrame(r)
 		if err != nil {
 			return
 		}
-		if s.gate.Paused() {
-			continue
-		}
-		var in model.Incoming
-		if err := json.Unmarshal(frame, &in); err != nil {
-			s.log.Warn("invalid json frame", "ip", ip, "port", port, "error", err)
-			continue
-		}
-		s.mgr.Handle(ip, port, model.ProtocolTCP, in)
+		s.handleFrame(ip, port, model.ProtocolTCP, frame)
 	}
+}
+
+// newlineLoop consumes JSON records that are terminated by a blank line
+// ("\n\n") instead of a binary length prefix.
+func (s *Server) newlineLoop(ip string, port int, protocol string, r *bufio.Reader) {
+	buf := make([]byte, 0, 8192)
+	tmp := make([]byte, 8192)
+	for {
+		n, err := r.Read(tmp)
+		if n > 0 {
+			buf = append(buf, tmp[:n]...)
+			var recs [][]byte
+			buf, recs = takeRecords(buf)
+			for _, rec := range recs {
+				s.handleFrame(ip, port, protocol, rec)
+			}
+		}
+		if err != nil {
+			return
+		}
+	}
+}
+
+// takeRecords extracts the complete "\n\n"-terminated records from buf,
+// returning the unconsumed remainder along with the records in order.
+func takeRecords(buf []byte) (rest []byte, recs [][]byte) {
+	for {
+		idx := bytes.Index(buf, []byte("\n\n"))
+		if idx < 0 {
+			return buf, recs
+		}
+		rec := bytes.TrimSpace(buf[:idx])
+		buf = buf[idx+2:]
+		if len(rec) > 0 {
+			recs = append(recs, rec)
+		}
+	}
+}
+
+// handleFrame validates a single JSON frame/record and routes it to the
+// session manager.
+func (s *Server) handleFrame(ip string, port int, protocol string, frame []byte) {
+	if s.gate.Paused() {
+		return
+	}
+	var in model.Incoming
+	if err := json.Unmarshal(frame, &in); err != nil {
+		s.log.Warn("invalid json frame", "ip", ip, "port", port, "protocol", protocol, "error", err)
+		return
+	}
+	s.mgr.Handle(ip, port, protocol, in)
 }
 
 func (s *Server) udpLoop() {
@@ -108,9 +166,6 @@ func (s *Server) udpLoop() {
 		n, addr, err := s.udpConn.ReadFromUDP(buf)
 		if err != nil {
 			return
-		}
-		if s.gate.Paused() {
-			continue
 		}
 		ip := addr.IP.String()
 		port := addr.Port
@@ -121,13 +176,7 @@ func (s *Server) udpLoop() {
 				frame = frame[2:]
 			}
 		}
-
-		var in model.Incoming
-		if err := json.Unmarshal(frame, &in); err != nil {
-			s.log.Warn("invalid udp datagram", "ip", ip, "port", port, "error", err)
-			continue
-		}
-		s.mgr.Handle(ip, port, model.ProtocolUDP, in)
+		s.handleFrame(ip, port, model.ProtocolUDP, frame)
 	}
 }
 
