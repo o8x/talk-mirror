@@ -32,6 +32,8 @@ export default function Settings() {
   const darkMode = useStore((s) => s.darkMode)
   const toggleDark = useStore((s) => s.toggleDark)
   const setThemeColor = useStore((s) => s.setThemeColor)
+  const storedKey = useStore((s) => s.key)
+  const setKey = useStore((s) => s.setKey)
   const [form, setForm] = useState<FormState>({
     web_host: '0.0.0.0',
     web_port: '443',
@@ -72,9 +74,15 @@ export default function Settings() {
 
   const onSave = async () => {
     const body: Record<string, string> = { ...form, dark_mode: String(darkMode) }
+    // A blank key means "keep the current one"; never overwrite it with empty.
+    const newKey = body.auth_key.trim()
+    if (!newKey) {
+      delete body.auth_key
+    }
     try {
       await saveSettings(body)
       if (body.theme_color) setThemeColor(body.theme_color)
+      if (newKey && newKey !== storedKey) setKey(newKey)
       setSaved(true)
     } catch {
       /* ignore */
@@ -171,6 +179,7 @@ export default function Settings() {
               label={t('settings.authKey')}
               value={form.auth_key}
               onChange={set('auth_key')}
+              placeholder={t('settings.authKeyPlaceholder')}
               InputLabelProps={shrink}
             />
           </Grid>

@@ -130,4 +130,5 @@ export const zh: Dict = {
   'settings.saved': '设置已保存',
   'settings.security': '安全',
   'settings.authKey': '访问密钥',
+  'settings.authKeyPlaceholder': '留空表示保持当前密钥',
 }

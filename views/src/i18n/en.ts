@@ -128,6 +128,7 @@ export const en = {
   'settings.saved': 'Settings saved',
   'settings.security': 'Security',
   'settings.authKey': 'Access key',
+  'settings.authKeyPlaceholder': 'leave blank to keep current',
 }
 
 export type Dict = typeof en

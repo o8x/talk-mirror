@@ -745,6 +745,10 @@ func (h *Handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		if k == "leveldb_dir" || k == "sqlite_file" {
 			continue
 		}
+		// Never blank out the access key: an empty key would lock everyone out.
+		if k == config.KeyAuthKey && strings.TrimSpace(v) == "" {
+			continue
+		}
 		if err := h.db.SetSetting(k, v); err != nil {
 			writeErr(w, http.StatusInternalServerError, err.Error())
 			return
