@@ -1,3 +1,7 @@
 # Talk-mirror service arguments. Customize additional CLI flags here; they are
-# appended to the systemd ExecStart command line on service start.
-ARGS="--talk-port 45678"
+# appended to the systemd ExecStart command line on service start. Empty by
+# default so the data port is taken from the stored settings.
+ARGS=""
+
+# Example: override the data ingest port on the command line.
+# ARGS="--talk-port 45678"
