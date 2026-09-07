@@ -84,7 +84,7 @@ export const en = {
   'connections.editSession': 'Edit session',
 
   'access.description':
-    'Copy a ready-to-run client snippet. All examples use only the language standard library and push frames in the format |2-byte length|json| to the data port (default 3000).',
+    'Copy a ready-to-run client snippet. All examples use only the language standard library and push frames in the format |2-byte length|json| to the data port (default 45678).',
   'access.classMode': 'Class',
   'access.appMode': 'Application',
 

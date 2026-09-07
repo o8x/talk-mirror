@@ -69,6 +69,6 @@ descriptive `message`. After writing, confirm with a short reply, e.g.
 ## Alternative: raw TCP/UDP ingest
 
 For non-HTTP clients, the same message is pushed to the data port (default
-`3000`) as a length-prefixed frame `|2-byte big-endian length|JSON|`. This
+`45678`) as a length-prefixed frame `|2-byte big-endian length|JSON|`. This
 module uses the HTTP endpoint because the agent only has an `https_request`
 tool.

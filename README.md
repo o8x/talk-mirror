@@ -26,7 +26,7 @@
 ## Features
 
 - **Single binary** — the React/MUI frontend is embedded into the Go binary via `embed.FS`.
-- **Raw TCP & UDP ingest** on a configurable data port (default `3000`).
+- **Raw TCP & UDP ingest** on a configurable data port (default `45678`).
 - **Automatic frame handling** — `|2-byte big-endian length|JSON|` framing with sticky-packet splitting.
 - **Client / session model** — an IP is a *client*, an `IP+port+protocol` pair is a *session*, each with a stable unique ID.
 - **High-throughput storage** — raw messages are buffered in memory and flushed to **LevelDB** every 10 000 records or 30 s.
@@ -54,7 +54,7 @@ Then open `https://127.0.0.1:443` (accept the self-signed certificate on first r
 | Endpoint | Default |
 |----------|---------|
 | Web UI + WebSocket + API | `https://0.0.0.0:443` |
-| Data ingest (TCP + UDP) | `0.0.0.0:3000` |
+| Data ingest (TCP + UDP) | `0.0.0.0:45678` |
 
 ## TLS certificate
 
@@ -189,7 +189,7 @@ import (
 )
 
 func main() {
-    conn, _ := net.Dial("tcp", "127.0.0.1:3000")
+    conn, _ := net.Dial("tcp", "127.0.0.1:45678")
     defer conn.Close()
     for {
         msg := map[string]any{
@@ -215,7 +215,7 @@ More examples (JavaScript, Python, Shell, C++) are available in the **Access** p
 Settings are editable in the **Settings** page and persisted to SQLite:
 
 - Web address / port (default `0.0.0.0:443`)
-- Data address / port (default `0.0.0.0:3000`)
+- Data address / port (default `0.0.0.0:45678`)
 - TLS certificate / key paths (auto-generated when empty)
 - Theme color and dark mode (dark = green, light = red)
 - Pause / resume the system

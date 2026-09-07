@@ -86,7 +86,7 @@ export const zh: Dict = {
   'connections.editSession': '编辑会话',
 
   'access.description':
-    '复制可直接运行的客户端代码。所有示例仅使用各语言标准库，以 |2字节长度|json| 的帧格式推送到数据端口（默认 3000）。',
+    '复制可直接运行的客户端代码。所有示例仅使用各语言标准库，以 |2字节长度|json| 的帧格式推送到数据端口（默认 45678）。',
   'access.classMode': '类',
   'access.appMode': '应用',
 

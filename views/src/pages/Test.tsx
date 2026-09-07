@@ -116,7 +116,7 @@ function genPython(
   data: Record<string, string>,
 ): string {
   const msgLit = JSON.stringify(message)
-  const port = parseInt(talkPort, 10) || 3000
+  const port = parseInt(talkPort, 10) || 45678
   const dataLit =
     '{' +
     Object.entries(data)
@@ -152,7 +152,7 @@ function genCpp(
   message: string,
   data: Record<string, string>,
 ): string {
-  const port = parseInt(talkPort, 10) || 3000
+  const port = parseInt(talkPort, 10) || 45678
   const entries = Object.entries(data)
   const dataStr = entries.length
     ? '{' + entries.map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(',') + '}'
@@ -211,7 +211,7 @@ export default function Test() {
   const darkMode = useStore((s) => s.darkMode)
   const saved = loadForm()
   const [address, setAddress] = useState(() => saved.address ?? window.location.hostname ?? '127.0.0.1')
-  const [talkPort, setTalkPort] = useState(() => saved.talkPort ?? '3000')
+  const [talkPort, setTalkPort] = useState(() => saved.talkPort ?? '45678')
   const [key, setKey] = useState(() => saved.key ?? getStoredKey())
   const [message, setMessage] = useState(() => saved.message ?? 'hello')
   const [sessionId, setSessionId] = useState(() => saved.sessionId ?? '')

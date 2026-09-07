@@ -154,7 +154,7 @@ class talk_mirror_message {
 class talk_mirror {
     std::atomic<int> sock_{-1};
     std::string ip_{"127.0.0.1"};
-    uint16_t port_{3000};
+    uint16_t port_{45678};
 
     talk_mirror() = default;
 
@@ -226,13 +226,13 @@ class talk_mirror {
 // appExamples show how to instantiate and use the class.
 var appExamples = map[string]string{
 	"javascript": `// Node.js (stdlib only) - usage
-const tm = new talk_mirror('127.0.0.1', 3000);
+const tm = new talk_mirror('127.0.0.1', 45678);
 
 tm.talk('hello', ['info'], { foo: 'bar' });
 `,
 
 	"python": `# Python 3 (stdlib only) - usage
-tm = talk_mirror("127.0.0.1", 3000)
+tm = talk_mirror("127.0.0.1", 45678)
 
 tm.talk("hello", ["info"], {"foo": "bar"})
 `,
@@ -241,7 +241,7 @@ tm.talk("hello", ["info"], {"foo": "bar"})
 
 // Go (stdlib only) - usage.
 func main() {
-    tm := NewTalkMirror("127.0.0.1", 3000)
+    tm := NewTalkMirror("127.0.0.1", 45678)
 
     _ = tm.Talk("hello", []string{"info"}, map[string]any{"foo": "bar"})
 }
@@ -249,14 +249,14 @@ func main() {
 
 	"shell": `#!/usr/bin/env bash
 # Bash - usage.
-talk_mirror_init 127.0.0.1 3000
+talk_mirror_init 127.0.0.1 45678
 
 talk_mirror_talk "hello" '["info"]' '{"foo":"bar"}'
 `,
 
 	"c++": `// C++17 - usage.
 int main() {
-    talk_mirror::init("127.0.0.1", 3000);
+    talk_mirror::init("127.0.0.1", 45678);
     talk_mirror::talk(talk_mirror_message{"hello", {"info"}, {{"foo", "bar"}}});
     talk_mirror::close();
     return 0;
@@ -276,9 +276,9 @@ func (h *Handler) code(w http.ResponseWriter, r *http.Request) {
 	ip := internalIP()
 	port := strconv.Itoa(h.dataPort)
 	class = strings.ReplaceAll(class, "127.0.0.1", ip)
-	class = strings.ReplaceAll(class, "3000", port)
+	class = strings.ReplaceAll(class, "45678", port)
 	app = strings.ReplaceAll(app, "127.0.0.1", ip)
-	app = strings.ReplaceAll(app, "3000", port)
+	app = strings.ReplaceAll(app, "45678", port)
 
 	writeJSON(w, http.StatusOK, map[string]string{"lang": lang, "class": class, "app": app})
 }

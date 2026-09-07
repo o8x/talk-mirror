@@ -13,7 +13,7 @@ const (
 	DefaultWebHost  = "0.0.0.0"
 	DefaultWebPort  = 443
 	DefaultDataHost = "0.0.0.0"
-	DefaultDataPort = 3000
+	DefaultDataPort = 45678
 
 	DefaultThemeColor = "#c62828"
 	DefaultDarkMode   = false
