@@ -443,6 +443,8 @@ func (m *Manager) UpdateSession(id, name string, port int) {
 	m.mu.Unlock()
 	if err := m.db.UpdateSession(id, name, port); err != nil {
 		m.log.Warn("update session", "id", id, "error", err)
+	} else {
+		m.log.Info("session updated", "id", id, "name", name, "port", port)
 	}
 	if ok {
 		m.broadcastSession(id)

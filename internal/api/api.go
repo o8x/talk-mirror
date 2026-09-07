@@ -797,6 +797,5 @@ func (h *Handler) ingest(w http.ResponseWriter, r *http.Request) {
 		port, _ = strconv.Atoi(portStr)
 	}
 	h.mgr.Handle(ip, port, "http", in)
-	h.log.Info("http log ingested", "ip", ip, "port", port, "message", in.Message)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ip": ip, "port": port})
 }

@@ -89,6 +89,13 @@ func runApp(ctx context.Context, cfg *config.Config) error {
 	}
 	settings, _ = db.AllSettings()
 
+	// Log the effective access key so it is easy to find after a fresh install.
+	key := cfg.Key
+	if key == "" {
+		key = settings[config.KeyAuthKey]
+	}
+	log.Info("access key", "key", key)
+
 	gate := &state.Gate{}
 	if settings[config.KeyPaused] == "true" {
 		gate.Pause()
