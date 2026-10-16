@@ -24,7 +24,7 @@ jobs:
       matrix:
         arch: [ amd64, arm64 ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
         with:
@@ -93,7 +93,7 @@ jobs:
       matrix:
         arch: [ amd64, arm64 ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
         with:
@@ -152,7 +152,7 @@ jobs:
       matrix:
         arch: [ amd64, arm64 ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
         with:
